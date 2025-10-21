@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth, signOut } from "@/lib/auth"
+import TodoList from "./TodoList"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -77,10 +78,7 @@ export default async function DashboardPage() {
 
         <div className="bg-white rounded-lg shadow p-6 mt-6">
           <h2 className="text-xl font-semibold mb-4">To-Do 리스트</h2>
-          <p className="text-gray-500">UI는 추후 추가 예정입니다. (DB 연결 필요)</p>
-          <p className="text-sm text-gray-400 mt-2">
-            API 엔드포인트: GET /api/todos, POST /api/todos, PATCH /api/todos/[id], DELETE /api/todos/[id]
-          </p>
+          <TodoList />
         </div>
 
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">

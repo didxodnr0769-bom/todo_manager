@@ -1,11 +1,13 @@
 import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
-// import { PrismaAdapter } from "@auth/prisma-adapter"
-// import { prisma } from "./prisma"
+import { PrismaAdapter } from "@auth/prisma-adapter"
+import { prisma } from "./prisma"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  // TODO: DB 연결 후 주석 해제
-  // adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt", // JWT 세션 전략 명시
+  },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -29,7 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      // TODO: DB 연결 후 user 기반으로 변경
+      // JWT 전략 사용 시 token.sub에서 사용자 ID 가져오기
       if (session.user && token.sub) {
         session.user.id = token.sub
       }
