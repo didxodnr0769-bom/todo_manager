@@ -32,8 +32,52 @@ export default async function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Google 캘린더 이벤트</h2>
+          <p className="text-gray-500 mb-4">오늘의 캘린더 일정을 가져옵니다.</p>
+
+          <div className="flex gap-3 flex-wrap">
+            <a
+              href="/api/debug/session"
+              target="_blank"
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 inline-block"
+            >
+              세션 확인
+            </a>
+            <a
+              href="/api/calendar/events"
+              target="_blank"
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 inline-block"
+            >
+              캘린더 이벤트 조회
+            </a>
+            <form
+              action={async () => {
+                "use server"
+                await signOut({ redirectTo: "/auth/signin" })
+              }}
+            >
+              <button
+                type="submit"
+                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+              >
+                재인증 (로그아웃 → 재로그인)
+              </button>
+            </form>
+          </div>
+
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-sm text-yellow-800 font-semibold mb-1">
+              ⚠️ 첫 로그인 후 액세스 토큰이 없다면:
+            </p>
+            <p className="text-sm text-yellow-700">
+              "재인증" 버튼을 클릭하여 로그아웃 후 다시 로그인하면 Google 캘린더 접근 권한이 활성화됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
           <h2 className="text-xl font-semibold mb-4">To-Do 리스트</h2>
-          <p className="text-gray-500">UI는 추후 추가 예정입니다.</p>
+          <p className="text-gray-500">UI는 추후 추가 예정입니다. (DB 연결 필요)</p>
           <p className="text-sm text-gray-400 mt-2">
             API 엔드포인트: GET /api/todos, POST /api/todos, PATCH /api/todos/[id], DELETE /api/todos/[id]
           </p>
