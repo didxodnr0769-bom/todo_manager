@@ -20,43 +20,28 @@ interface CalendarEvent {
   start: string
   end: string
   location?: string
+  calendarId?: string
+  calendarName?: string
+  backgroundColor?: string
+  foregroundColor?: string
 }
 
 export default function CalendarSelector() {
-  const [calendars, setCalendars] = useState<Calendar[]>([])
-  const [selectedCalendarId, setSelectedCalendarId] = useState<string>("primary")
   const [events, setEvents] = useState<CalendarEvent[]>([])
-  const [isLoadingCalendars, setIsLoadingCalendars] = useState(false)
+  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
+  const [isCreatingTodos, setIsCreatingTodos] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   )
 
-  // 캘린더 목록 조회
-  const fetchCalendars = async () => {
-    try {
-      setIsLoadingCalendars(true)
-      const response = await fetch("/api/calendar/list")
-      if (!response.ok) throw new Error("Failed to fetch calendars")
-      const data = await response.json()
-      setCalendars(data.calendars)
-      setError(null)
-    } catch (err) {
-      setError("캘린더 목록을 불러오는데 실패했습니다.")
-      console.error(err)
-    } finally {
-      setIsLoadingCalendars(false)
-    }
-  }
-
-  // 선택된 캘린더의 이벤트 조회
+  // 모든 캘린더의 이벤트 조회
   const fetchEvents = async () => {
     try {
       setIsLoadingEvents(true)
-      const response = await fetch(
-        `/api/calendar/events?calendarId=${selectedCalendarId}&date=${selectedDate}`
-      )
+      const response = await fetch(`/api/calendar/events?date=${selectedDate}`)
       if (!response.ok) throw new Error("Failed to fetch events")
       const data = await response.json()
       setEvents(data.events)
@@ -70,14 +55,66 @@ export default function CalendarSelector() {
   }
 
   useEffect(() => {
-    fetchCalendars()
-  }, [])
+    fetchEvents()
+  }, [selectedDate])
 
-  useEffect(() => {
-    if (selectedCalendarId) {
-      fetchEvents()
+  // 체크박스 토글
+  const toggleEventSelection = (eventId: string) => {
+    setSelectedEventIds((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId)
+      } else {
+        newSet.add(eventId)
+      }
+      return newSet
+    })
+  }
+
+  // 선택된 일정으로 To-Do 생성
+  const createTodosFromSelectedEvents = async () => {
+    if (selectedEventIds.size === 0) {
+      setError("선택된 일정이 없습니다.")
+      return
     }
-  }, [selectedCalendarId, selectedDate])
+
+    try {
+      setIsCreatingTodos(true)
+      setError(null)
+      setSuccessMessage(null)
+
+      const selectedEvents = events.filter((event) =>
+        selectedEventIds.has(event.id)
+      )
+
+      // 각 이벤트를 To-Do로 생성
+      const createPromises = selectedEvents.map((event) =>
+        fetch("/api/todos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: event.summary,
+            date: selectedDate,
+          }),
+        })
+      )
+
+      await Promise.all(createPromises)
+
+      setSuccessMessage(
+        `${selectedEventIds.size}개의 To-Do가 생성되었습니다.`
+      )
+      setSelectedEventIds(new Set())
+
+      // To-Do 리스트 새로고침을 위해 페이지 리로드 또는 이벤트 발생
+      window.location.reload()
+    } catch (err) {
+      setError("To-Do 생성에 실패했습니다.")
+      console.error(err)
+    } finally {
+      setIsCreatingTodos(false)
+    }
+  }
 
   // 날짜 변경 핸들러
   const changeDate = (days: number) => {
@@ -94,64 +131,11 @@ export default function CalendarSelector() {
         </div>
       )}
 
-      {/* 캘린더 목록 */}
-      <div>
-        <h3 className="font-semibold mb-3">캘린더 선택</h3>
-        {isLoadingCalendars ? (
-          <div className="flex items-center gap-2 text-gray-500">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-            <span>로딩 중...</span>
-          </div>
-        ) : calendars.length === 0 ? (
-          <p className="text-gray-500">캘린더 목록이 없습니다.</p>
-        ) : (
-          <div className="space-y-2">
-            {calendars.map((calendar) => (
-              <label
-                key={calendar.id}
-                className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors ${
-                  selectedCalendarId === calendar.id
-                    ? "bg-blue-50 border-blue-300"
-                    : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="calendar"
-                  value={calendar.id}
-                  checked={selectedCalendarId === calendar.id}
-                  onChange={(e) => setSelectedCalendarId(e.target.value)}
-                  className="w-4 h-4"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{calendar.summary}</span>
-                    {calendar.primary && (
-                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                        기본
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-500">
-                      ({calendar.accessRole})
-                    </span>
-                  </div>
-                  {calendar.description && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      {calendar.description}
-                    </p>
-                  )}
-                </div>
-                {calendar.backgroundColor && (
-                  <div
-                    className="w-6 h-6 rounded"
-                    style={{ backgroundColor: calendar.backgroundColor }}
-                  ></div>
-                )}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
+      {successMessage && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
+          {successMessage}
+        </div>
+      )}
 
       {/* 날짜 선택 */}
       <div>
@@ -190,9 +174,23 @@ export default function CalendarSelector() {
 
       {/* 이벤트 목록 */}
       <div>
-        <h3 className="font-semibold mb-3">
-          캘린더 이벤트 ({selectedDate})
-        </h3>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-semibold">
+            캘린더 이벤트 ({selectedDate})
+          </h3>
+          {selectedEventIds.size > 0 && (
+            <button
+              onClick={createTodosFromSelectedEvents}
+              disabled={isCreatingTodos}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isCreatingTodos
+                ? "생성 중..."
+                : `To-Do 생성하기 (${selectedEventIds.size})`}
+            </button>
+          )}
+        </div>
+
         {isLoadingEvents ? (
           <div className="flex items-center gap-2 text-gray-500">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
@@ -207,30 +205,54 @@ export default function CalendarSelector() {
             {events.map((event) => (
               <li
                 key={event.id}
-                className="p-3 bg-gray-50 rounded border border-gray-200"
+                className="p-3 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition-colors"
               >
-                <div className="font-medium">{event.summary}</div>
-                {event.description && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    {event.description}
-                  </p>
-                )}
-                <div className="text-sm text-gray-500 mt-1">
-                  {new Date(event.start).toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  -{" "}
-                  {new Date(event.end).toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-                {event.location && (
-                  <div className="text-sm text-gray-500 mt-1">
-                    📍 {event.location}
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedEventIds.has(event.id)}
+                    onChange={() => toggleEventSelection(event.id)}
+                    className="mt-1 w-4 h-4 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      {event.backgroundColor && (
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: event.backgroundColor }}
+                          title={event.calendarName}
+                        ></div>
+                      )}
+                      <span className="font-medium">{event.summary}</span>
+                      {event.calendarName && (
+                        <span className="text-xs text-gray-500">
+                          [{event.calendarName}]
+                        </span>
+                      )}
+                    </div>
+                    {event.description && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        {event.description}
+                      </p>
+                    )}
+                    <div className="text-sm text-gray-500 mt-1">
+                      {new Date(event.start).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      -{" "}
+                      {new Date(event.end).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                    {event.location && (
+                      <div className="text-sm text-gray-500 mt-1">
+                        📍 {event.location}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </li>
             ))}
           </ul>

@@ -12,7 +12,6 @@ export async function GET(request: Request) {
 
     // URL에서 쿼리 파라미터 추출
     const { searchParams } = new URL(request.url)
-    const calendarId = searchParams.get("calendarId") || "primary" // 기본값: primary
     const dateParam = searchParams.get("date") // YYYY-MM-DD 형식
 
     // OAuth2 클라이언트 설정
@@ -35,30 +34,56 @@ export async function GET(request: Request) {
     const nextDay = new Date(targetDate)
     nextDay.setDate(nextDay.getDate() + 1)
 
-    // 캘린더 이벤트 가져오기
-    const response = await calendar.events.list({
-      calendarId: calendarId,
-      timeMin: targetDate.toISOString(),
-      timeMax: nextDay.toISOString(),
-      singleEvents: true,
-      orderBy: "startTime",
+    // 모든 캘린더 목록 가져오기
+    const calendarListResponse = await calendar.calendarList.list()
+    const calendars = calendarListResponse.data.items || []
+
+    // 각 캘린더의 이벤트를 병렬로 가져오기
+    const allEventsPromises = calendars.map(async (cal) => {
+      try {
+        const response = await calendar.events.list({
+          calendarId: cal.id!,
+          timeMin: targetDate.toISOString(),
+          timeMax: nextDay.toISOString(),
+          singleEvents: true,
+          orderBy: "startTime",
+        })
+
+        const events = response.data.items || []
+
+        return events.map((event) => ({
+          id: event.id,
+          summary: event.summary,
+          description: event.description,
+          start: event.start?.dateTime || event.start?.date,
+          end: event.end?.dateTime || event.end?.date,
+          location: event.location,
+          calendarId: cal.id,
+          calendarName: cal.summary,
+          backgroundColor: cal.backgroundColor,
+          foregroundColor: cal.foregroundColor,
+        }))
+      } catch (error) {
+        console.error(`Error fetching events for calendar ${cal.id}:`, error)
+        return []
+      }
     })
 
-    const events = response.data.items || []
+    const eventsArrays = await Promise.all(allEventsPromises)
+    const allEvents = eventsArrays.flat()
+
+    // 시작 시간 기준으로 정렬
+    allEvents.sort((a, b) => {
+      const aTime = new Date(a.start || 0).getTime()
+      const bTime = new Date(b.start || 0).getTime()
+      return aTime - bTime
+    })
 
     return NextResponse.json({
       success: true,
-      count: events.length,
-      calendarId: calendarId,
+      count: allEvents.length,
       date: targetDate.toISOString().split('T')[0],
-      events: events.map((event) => ({
-        id: event.id,
-        summary: event.summary,
-        description: event.description,
-        start: event.start?.dateTime || event.start?.date,
-        end: event.end?.dateTime || event.end?.date,
-        location: event.location,
-      })),
+      events: allEvents,
     })
 
   } catch (error: any) {
