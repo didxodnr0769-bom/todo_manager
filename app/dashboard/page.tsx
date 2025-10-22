@@ -39,7 +39,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* 헤더 */}
-      <Header userName={session?.user?.name} />
+      <Header userName={session?.user?.name} userEmail={session?.user?.email} />
 
       {/* 메인 컨텐츠 */}
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
