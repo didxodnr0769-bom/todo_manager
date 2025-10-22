@@ -132,8 +132,20 @@ export default function CalendarEventsSection({
 
       {/* 캘린더 이벤트 목록 */}
       {events.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm p-12 text-center text-gray-500 text-sm">
-          해당 날짜에 일정이 없습니다.
+        <div className="bg-white rounded-2xl shadow-sm p-16 text-center">
+          <div className="flex flex-col items-center gap-6">
+            {/* 파티 이모지 아이콘 */}
+            <div className="text-6xl">🎉</div>
+
+            {/* 메시지 */}
+            <div className="space-y-2">
+              <p className="text-gray-900 font-medium text-base leading-relaxed">
+                오늘 예정된 일정이 없습니다.
+                <br />
+                편안한 하루 보내세요!
+              </p>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
