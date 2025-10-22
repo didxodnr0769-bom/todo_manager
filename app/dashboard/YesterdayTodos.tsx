@@ -1,83 +1,83 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Clock, ChevronUp, ChevronDown, ArrowRight } from "lucide-react"
+import { useEffect, useState } from "react";
+import { Clock, ChevronUp, ChevronDown, ArrowRight } from "lucide-react";
 
 interface Todo {
-  id: string
-  content: string
-  isCompleted: boolean
-  date: string
-  createdAt: string
+  id: string;
+  content: string;
+  isCompleted: boolean;
+  date: string;
+  createdAt: string;
 }
 
 export default function YesterdayTodos() {
-  const [yesterdayTodos, setYesterdayTodos] = useState<Todo[]>([])
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isLoading, setIsLoading] = useState(true)
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [isMoving, setIsMoving] = useState(false)
+  const [yesterdayTodos, setYesterdayTodos] = useState<Todo[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isMoving, setIsMoving] = useState(false);
 
   // 어제 날짜 계산
   const getYesterdayDate = () => {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    return yesterday.toISOString().split("T")[0]
-  }
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split("T")[0];
+  };
 
   // 어제의 미완료 할 일 조회
   const fetchYesterdayTodos = async () => {
     try {
-      setIsLoading(true)
-      const yesterdayDate = getYesterdayDate()
-      const response = await fetch(`/api/todos?date=${yesterdayDate}`)
-      if (!response.ok) throw new Error("Failed to fetch todos")
-      const data = await response.json()
+      setIsLoading(true);
+      const yesterdayDate = getYesterdayDate();
+      const response = await fetch(`/api/todos?date=${yesterdayDate}`);
+      if (!response.ok) throw new Error("Failed to fetch todos");
+      const data = await response.json();
       // 미완료 항목만 필터링
-      const incompleteTodos = data.filter((todo: Todo) => !todo.isCompleted)
-      setYesterdayTodos(incompleteTodos)
+      const incompleteTodos = data.filter((todo: Todo) => !todo.isCompleted);
+      setYesterdayTodos(incompleteTodos);
     } catch (err) {
-      console.error("어제 할 일을 불러오는데 실패했습니다:", err)
+      console.error("어제 할 일을 불러오는데 실패했습니다:", err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchYesterdayTodos()
-  }, [])
+    fetchYesterdayTodos();
+  }, []);
 
   // 전체 선택/해제
   const toggleSelectAll = () => {
     if (selectedIds.size === yesterdayTodos.length) {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(yesterdayTodos.map((todo) => todo.id)))
+      setSelectedIds(new Set(yesterdayTodos.map((todo) => todo.id)));
     }
-  }
+  };
 
   // 개별 선택
   const toggleSelect = (id: string) => {
-    const newSet = new Set(selectedIds)
+    const newSet = new Set(selectedIds);
     if (newSet.has(id)) {
-      newSet.delete(id)
+      newSet.delete(id);
     } else {
-      newSet.add(id)
+      newSet.add(id);
     }
-    setSelectedIds(newSet)
-  }
+    setSelectedIds(newSet);
+  };
 
   // 오늘 할 일로 추가
   const moveToToday = async () => {
-    if (selectedIds.size === 0) return
+    if (selectedIds.size === 0) return;
 
     try {
-      setIsMoving(true)
-      const today = new Date().toISOString().split("T")[0]
+      setIsMoving(true);
+      const today = new Date().toISOString().split("T")[0];
 
       const selectedTodos = yesterdayTodos.filter((todo) =>
         selectedIds.has(todo.id)
-      )
+      );
 
       // 각 할 일을 오늘 날짜로 복사
       const createPromises = selectedTodos.map((todo) =>
@@ -89,41 +89,33 @@ export default function YesterdayTodos() {
             date: today,
           }),
         })
-      )
+      );
 
-      await Promise.all(createPromises)
+      await Promise.all(createPromises);
 
       // 성공 후 목록 새로고침
-      window.location.reload()
+      window.location.reload();
     } catch (err) {
-      console.error("오늘 할 일로 추가하는데 실패했습니다:", err)
+      console.error("오늘 할 일로 추가하는데 실패했습니다:", err);
     } finally {
-      setIsMoving(false)
+      setIsMoving(false);
     }
-  }
+  };
 
   // 시간 파싱
   const parseTimeFromContent = (content: string) => {
-    const timeMatch = content.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/)
+    const timeMatch = content.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
     if (timeMatch) {
       return {
         text: content.replace(timeMatch[0], "").trim(),
         time: timeMatch[0],
-      }
+      };
     }
-    return { text: content, time: null }
-  }
-
-  // 캘린더 색상 가져오기 (content에서 추출 가능한 경우)
-  const getCalendarColor = (content: string) => {
-    // 간단한 해시 기반 색상 (실제로는 캘린더 정보가 있어야 함)
-    const colors = ["#4285f4", "#0b8043", "#e37400"]
-    const hash = content.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    return colors[hash % colors.length]
-  }
+    return { text: content, time: null };
+  };
 
   if (isLoading || yesterdayTodos.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -159,9 +151,7 @@ export default function YesterdayTodos() {
           {/* 할 일 목록 */}
           <div>
             {yesterdayTodos.map((todo) => {
-              const { text, time } = parseTimeFromContent(todo.content)
-              const hasColorIndicator = Math.random() > 0.5 // 임시: 50% 확률로 색상 표시
-              const color = getCalendarColor(todo.content)
+              const { text, time } = parseTimeFromContent(todo.content);
 
               return (
                 <div
@@ -195,13 +185,11 @@ export default function YesterdayTodos() {
                       )}
                     </button>
 
-                    {/* 캘린더 색상 인디케이터 (있는 경우) */}
-                    {hasColorIndicator && (
-                      <div
-                        className="w-1 h-6 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: color }}
-                      />
-                    )}
+                    {/* 캘린더 색상 인디케이터 */}
+                    <div
+                      className="w-1 h-6 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: "#fff334" }}
+                    />
 
                     {/* 내용 */}
                     <div className="flex-1 min-w-0">
@@ -212,7 +200,7 @@ export default function YesterdayTodos() {
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
 
@@ -246,5 +234,5 @@ export default function YesterdayTodos() {
         </>
       )}
     </div>
-  )
+  );
 }
