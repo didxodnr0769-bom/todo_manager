@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Plus } from "lucide-react"
+import AddTodoDialog from "./AddTodoDialog"
 
 interface Todo {
   id: string
@@ -18,6 +20,7 @@ export default function TodoList() {
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   )
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   // To-Do 목록 조회
   const fetchTodos = async (date?: string) => {
@@ -37,7 +40,7 @@ export default function TodoList() {
     }
   }
 
-  // 새 To-Do 추가
+  // 새 To-Do 추가 (폼 제출)
   const addTodo = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTodo.trim()) return
@@ -54,6 +57,30 @@ export default function TodoList() {
       const createdTodo = await response.json()
       setTodos([...todos, createdTodo])
       setNewTodo("")
+      setError(null)
+    } catch (err) {
+      setError("할 일 추가에 실패했습니다.")
+      console.error(err)
+    }
+  }
+
+  // 다이얼로그에서 To-Do 추가
+  const handleDialogAdd = async (todoData: { content: string; startTime?: string; endTime?: string }) => {
+    try {
+      const content = todoData.startTime && todoData.endTime
+        ? `${todoData.content} (${todoData.startTime} - ${todoData.endTime})`
+        : todoData.content
+
+      const response = await fetch("/api/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, date: selectedDate }),
+      })
+
+      if (!response.ok) throw new Error("Failed to create todo")
+
+      const createdTodo = await response.json()
+      setTodos([...todos, createdTodo])
       setError(null)
     } catch (err) {
       setError("할 일 추가에 실패했습니다.")
@@ -160,6 +187,17 @@ export default function TodoList() {
         </button>
       </div>
 
+      {/* 일정 추가 버튼 */}
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={() => setIsDialogOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          일정 추가
+        </button>
+      </div>
+
       {/* 새 To-Do 추가 폼 */}
       <form onSubmit={addTodo} className="mb-6">
         <div className="flex gap-2">
@@ -225,6 +263,14 @@ export default function TodoList() {
           {todos.filter((t) => !t.isCompleted).length}개
         </div>
       )}
+
+      {/* 일정 추가 다이얼로그 */}
+      <AddTodoDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onAdd={handleDialogAdd}
+        selectedDate={new Date(selectedDate)}
+      />
     </div>
   )
 }

@@ -1,55 +1,66 @@
-import { redirect } from "next/navigation"
-import { auth, signOut } from "@/lib/auth"
-import TodoList from "./TodoList"
-import CalendarSelector from "./CalendarSelector"
+"use client"
 
-export default async function DashboardPage() {
-  const session = await auth()
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import Header from "./Header"
+import DatePicker from "./DatePicker"
+import TabView from "./TabView"
+import TodoListSection from "./TodoListSection"
+import CalendarEventsSection from "./CalendarEventsSection"
+import YesterdayTodos from "./YesterdayTodos"
 
-  if (!session) {
-    redirect("/auth/signin")
+export default function DashboardPage() {
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  )
+  const [activeTab, setActiveTab] = useState<"todos" | "calendar">("todos")
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin")
+    }
+  }, [status, router])
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  if (status === "unauthenticated") {
+    return null
   }
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">안녕하세요, {session.user?.name}님</h1>
-            <p className="text-gray-600 mt-2">오늘의 할 일</p>
-          </div>
-          <form
-            action={async () => {
-              "use server"
-              await signOut({ redirectTo: "/" })
-            }}
-          >
-            <button
-              type="submit"
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
-              로그아웃
-            </button>
-          </form>
-        </div>
+    <div className="min-h-screen bg-gray-100">
+      {/* 헤더 */}
+      <Header userName={session?.user?.name} />
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Google 캘린더</h2>
-          <CalendarSelector />
-        </div>
+      {/* 메인 컨텐츠 */}
+      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+        {/* 날짜 선택기 */}
+        <DatePicker
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+        />
 
-        <div className="bg-white rounded-lg shadow p-6 mt-6">
-          <h2 className="text-xl font-semibold mb-4">To-Do 리스트</h2>
-          <TodoList />
-        </div>
+        {/* 탭 뷰 */}
+        <TabView activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">크론 작업 안내</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• 매일 00:00 - 구글 캘린더에서 오늘 일정 가져오기 (GET /api/cron/create-todos)</li>
-            <li>• 매일 21:00 - 미완료 항목 알림 발송 (GET /api/cron/send-notifications)</li>
-          </ul>
-        </div>
+        {/* 탭 컨텐츠 */}
+        {activeTab === "todos" ? (
+          <TodoListSection selectedDate={selectedDate} />
+        ) : (
+          <CalendarEventsSection selectedDate={selectedDate} />
+        )}
+
+        {/* 어제 완료하지 못한 할 일 */}
+        <YesterdayTodos />
       </div>
     </div>
   )
