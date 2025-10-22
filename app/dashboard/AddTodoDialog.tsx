@@ -1,13 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { X, Plus } from "lucide-react"
+import { X } from "lucide-react"
 
 interface AddTodoDialogProps {
   isOpen: boolean
   onClose: () => void
   onAdd: (todo: { content: string; startTime?: string; endTime?: string }) => void
-  selectedDate: Date
 }
 
 const timeSlots = [
@@ -21,7 +20,7 @@ const timeSlots = [
   "21:00", "21:30", "22:00", "22:30", "23:00", "23:30"
 ]
 
-export default function AddTodoDialog({ isOpen, onClose, onAdd, selectedDate }: AddTodoDialogProps) {
+export default function AddTodoDialog({ isOpen, onClose, onAdd }: AddTodoDialogProps) {
   const [title, setTitle] = useState("")
   const [startTime, setStartTime] = useState<string>("")
   const [endTime, setEndTime] = useState<string>("")

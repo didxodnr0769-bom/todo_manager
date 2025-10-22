@@ -107,6 +107,7 @@ export default function TodoListSection({ selectedDate }: TodoListSectionProps) 
 
   useEffect(() => {
     fetchTodos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
   const completedCount = todos.filter((t) => t.isCompleted).length
@@ -241,7 +242,6 @@ export default function TodoListSection({ selectedDate }: TodoListSectionProps) 
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onAdd={handleDialogAdd}
-        selectedDate={new Date(selectedDate)}
       />
     </div>
   )

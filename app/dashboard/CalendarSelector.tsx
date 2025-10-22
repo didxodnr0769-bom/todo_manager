@@ -2,17 +2,6 @@
 
 import { useEffect, useState } from "react"
 
-interface Calendar {
-  id: string
-  summary: string
-  description?: string
-  primary?: boolean
-  accessRole: string
-  backgroundColor?: string
-  foregroundColor?: string
-  selected?: boolean
-}
-
 interface CalendarEvent {
   id: string
   summary: string
@@ -56,6 +45,7 @@ export default function CalendarSelector() {
 
   useEffect(() => {
     fetchEvents()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
   // 체크박스 토글

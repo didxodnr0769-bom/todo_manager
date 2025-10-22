@@ -50,6 +50,7 @@ export default function CalendarEventsSection({
 
   useEffect(() => {
     fetchEvents()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
   // 체크박스 토글

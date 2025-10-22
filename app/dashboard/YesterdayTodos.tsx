@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, ChevronUp, ChevronDown, ArrowRight } from "lucide-react";
+import { ChevronUp, ChevronDown, ArrowRight } from "lucide-react";
 
 interface Todo {
   id: string;
@@ -45,6 +45,7 @@ export default function YesterdayTodos() {
 
   useEffect(() => {
     fetchYesterdayTodos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 전체 선택/해제

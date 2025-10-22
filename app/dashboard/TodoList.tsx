@@ -127,6 +127,7 @@ export default function TodoList() {
 
   useEffect(() => {
     fetchTodos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
   // 날짜 변경 핸들러
@@ -269,7 +270,6 @@ export default function TodoList() {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onAdd={handleDialogAdd}
-        selectedDate={new Date(selectedDate)}
       />
     </div>
   )
