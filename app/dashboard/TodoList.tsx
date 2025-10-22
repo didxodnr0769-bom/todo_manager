@@ -15,12 +15,16 @@ export default function TodoList() {
   const [newTodo, setNewTodo] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  )
 
   // To-Do 목록 조회
-  const fetchTodos = async () => {
+  const fetchTodos = async (date?: string) => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/todos")
+      const dateParam = date || selectedDate
+      const response = await fetch(`/api/todos?date=${dateParam}`)
       if (!response.ok) throw new Error("Failed to fetch todos")
       const data = await response.json()
       setTodos(data)
@@ -42,7 +46,7 @@ export default function TodoList() {
       const response = await fetch("/api/todos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newTodo }),
+        body: JSON.stringify({ content: newTodo, date: selectedDate }),
       })
 
       if (!response.ok) throw new Error("Failed to create todo")
@@ -96,7 +100,19 @@ export default function TodoList() {
 
   useEffect(() => {
     fetchTodos()
-  }, [])
+  }, [selectedDate])
+
+  // 날짜 변경 핸들러
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedDate(e.target.value)
+  }
+
+  // 이전/다음 날짜로 이동
+  const changeDate = (days: number) => {
+    const currentDate = new Date(selectedDate)
+    currentDate.setDate(currentDate.getDate() + days)
+    setSelectedDate(currentDate.toISOString().split("T")[0])
+  }
 
   if (isLoading) {
     return (
@@ -113,6 +129,36 @@ export default function TodoList() {
           {error}
         </div>
       )}
+
+      {/* 날짜 선택기 */}
+      <div className="mb-6 flex items-center gap-2">
+        <button
+          onClick={() => changeDate(-1)}
+          className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+          title="이전 날짜"
+        >
+          ←
+        </button>
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={handleDateChange}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={() => changeDate(1)}
+          className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+          title="다음 날짜"
+        >
+          →
+        </button>
+        <button
+          onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          오늘
+        </button>
+      </div>
 
       {/* 새 To-Do 추가 폼 */}
       <form onSubmit={addTodo} className="mb-6">
