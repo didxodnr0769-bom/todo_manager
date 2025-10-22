@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { signIn } from "@/lib/auth"
 
 export async function GET() {
   // Google 재인증 페이지로 리다이렉트

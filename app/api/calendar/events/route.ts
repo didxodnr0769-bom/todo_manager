@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { google } from "googleapis"
+import { Session } from "next-auth"
+
+interface ExtendedSession extends Session {
+  accessToken?: string
+}
 
 export async function GET(request: Request) {
   try {
-    const session = await auth() as any
+    const session = await auth() as ExtendedSession | null
 
     if (!session || !session.accessToken) {
       return NextResponse.json({ error: "Unauthorized - Please login again" }, { status: 401 })
@@ -86,12 +91,13 @@ export async function GET(request: Request) {
       events: allEvents,
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Calendar API error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
       {
         error: "Failed to fetch calendar events",
-        details: error.message
+        details: errorMessage
       },
       { status: 500 }
     )
