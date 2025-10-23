@@ -142,6 +142,103 @@ app/
 
 ---
 
+### 2025-10-23
+
+#### SSR + Server Actions 아키텍처로 전환
+**커밋:** `refactor: SSR + Server Actions 방식으로 전환` (6059103)
+
+**주요 변경사항:**
+
+1. **Server Actions 구현**
+   - `app/actions/todos.ts` (신규 생성):
+     - `getTodos(dateParam?)`: 날짜별 To-Do 목록 서버 사이드 조회
+     - `addTodo(content, date?)`: To-Do 추가 + `revalidatePath('/dashboard')`
+     - `toggleTodo(id, isCompleted)`: 완료 상태 변경 + 재검증
+     - `deleteTodo(id)`: To-Do 삭제 + 재검증
+   - 모든 함수에서 `auth()` 호출하여 서버에서 인증 확인
+   - Prisma를 통한 직접 DB 조회 (API Route 우회)
+
+2. **대시보드 페이지를 Server Component로 전환**
+   - `app/dashboard/page.tsx` (11행 → 18행):
+     - "use client" 디렉티브 제거
+     - `async function`으로 변경
+     - 서버에서 직접 `await auth()` 호출
+     - 인증 실패 시 `redirect('/auth/signin')` (서버 사이드 리다이렉트)
+   - `app/dashboard/DashboardClient.tsx` (신규):
+     - 클라이언트 전용 상태 관리 로직 분리
+     - `selectedDate`, `activeTab` 상태 관리
+     - 기존 UI 컴포넌트 조합
+
+3. **TodoListSection Server Actions 연동**
+   - `app/dashboard/TodoListSection.tsx`:
+     - `fetch()` API 호출 → Server Actions 직접 호출로 변경
+     - `useTransition()` 훅 추가하여 낙관적 업데이트 지원
+     - `handleToggleTodo`, `handleDeleteTodo`, `handleDialogAdd` 함수명 변경
+     - `startTransition()` 내에서 Server Actions 실행
+
+4. **코드 스타일 통일**
+   - `app/dashboard/TodoList.tsx`: 세미콜론 추가 및 포매팅 개선
+
+**기술적 결정:**
+
+- **CSR → SSR 전환 이유:**
+  - 초기 로딩 시 완전한 HTML을 서버에서 생성하여 SEO 향상
+  - 인증 확인이 서버에서 처리되어 보안 강화
+  - 클라이언트 JavaScript 번들 크기 감소
+
+- **Server Actions 사용:**
+  - API Route 중간 레이어 제거로 코드 간소화
+  - `revalidatePath()`로 데이터 변경 시 해당 페이지만 재검증
+  - TypeScript 타입 안정성 향상 (fetch 대신 직접 함수 호출)
+
+- **useTransition 활용:**
+  - 사용자 액션에 대한 즉각적인 UI 피드백
+  - 서버 응답 대기 중에도 인터랙션 가능
+  - 네트워크 지연 시 UX 개선
+
+**렌더링 흐름 비교:**
+
+이전 (CSR):
+```
+브라우저 요청 → 빈 HTML 전송 → JS 다운로드 → React 마운트
+→ useEffect 실행 → API 호출 → 데이터 렌더링
+```
+
+현재 (SSR + Server Actions):
+```
+브라우저 요청 → 서버에서 인증 확인 → 완전한 HTML 생성 → 전송
+사용자 액션 → Server Action 실행 → revalidatePath() → 페이지 재검증
+```
+
+**테스트 방법:**
+
+1. 서버 재시작 및 페이지 소스 확인:
+   ```bash
+   npm run dev
+   # 브라우저에서 페이지 소스 보기 → To-Do 데이터가 HTML에 포함되어 있는지 확인
+   ```
+
+2. To-Do 추가 테스트:
+   - "일정 추가" 버튼 클릭
+   - 내용 입력 후 저장
+   - 즉시 UI 업데이트 확인 (useTransition 효과)
+
+3. 완료 상태 변경:
+   - 체크박스 클릭
+   - 서버 재검증 후 상태 유지 확인
+
+4. 네트워크 탭 확인:
+   - Server Actions 호출 시 `/api/todos` 대신 Next.js 내부 엔드포인트 사용 확인
+   - Response에 RSC Payload 포함 여부 확인
+
+**성능 개선 사항:**
+
+- 초기 로딩 시간 단축 (서버에서 데이터 포함하여 전송)
+- 불필요한 API 라운드트립 제거
+- 클라이언트 JS 번들 크기 감소 (fetch 로직 제거)
+
+---
+
 ## 다음 작업 예정
 - [x] Supabase PostgreSQL 데이터베이스 연결
 - [x] PrismaAdapter 활성화 및 마이그레이션 실행
