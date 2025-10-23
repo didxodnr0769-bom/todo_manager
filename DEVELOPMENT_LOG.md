@@ -325,6 +325,90 @@ app/
 
 ---
 
+#### Google OAuth 토큰 자동 갱신 기능 구현
+**커밋:** `feat: Google OAuth 토큰 자동 갱신 기능 구현` (28e4599)
+
+**주요 변경사항:**
+
+1. **refreshAccessToken 함수 추가**
+   - `lib/auth.ts:6-41`: Google OAuth 토큰 갱신 함수 구현
+   - refresh_token을 사용하여 Google OAuth 2.0 토큰 엔드포인트에 새로운 액세스 토큰 요청
+   - 응답에서 받은 `expires_in` 값으로 만료 시간 계산 (현재 시간 + 초 단위)
+   - 새로운 refresh_token이 없으면 기존 것 재사용
+
+2. **JWT 콜백 리팩토링**
+   - `lib/auth.ts:74-113`: 토큰 만료 확인 및 자동 갱신 로직 추가
+   - 초기 로그인 시 `accessTokenExpires` 필드에 만료 시간 저장 (account.expires_at * 1000 또는 기본값 1시간)
+   - 매 요청마다 `Date.now() < token.accessTokenExpires` 조건으로 토큰 유효성 확인
+   - 만료된 경우 `refreshAccessToken()` 호출하여 새 토큰으로 교체
+   - 갱신 실패 시 `error: "RefreshAccessTokenError"` 플래그 추가
+
+3. **타입 정의 확장**
+   - `types/next-auth.d.ts:17`: JWT 인터페이스에 `accessTokenExpires?: number` 필드 추가
+
+**기술적 결정:**
+
+- **토큰 자동 갱신 필요성:**
+  - Google OAuth 액세스 토큰은 기본적으로 1시간(3600초) 후 만료
+  - 만료된 토큰으로 Calendar API 호출 시 `401 Unauthorized` 오류 발생
+  - refresh_token을 사용한 자동 갱신으로 사용자 재로그인 없이 지속적인 API 접근 보장
+
+- **JWT 콜백에서 처리한 이유:**
+  - NextAuth.js의 JWT 전략을 사용 중이므로 모든 인증 요청이 JWT 콜백을 거침
+  - 각 요청마다 자동으로 토큰 상태를 확인하여 투명하게 갱신 처리
+  - 클라이언트 코드 수정 없이 백엔드에서 일관되게 관리
+
+- **에러 핸들링:**
+  - 갱신 실패 시 error 플래그를 JWT에 추가하여 프론트엔드에서 감지 가능
+  - refresh_token 만료 또는 권한 취소 시 사용자에게 재로그인 유도
+
+**토큰 갱신 흐름:**
+
+```
+사용자 요청 → JWT 콜백 실행 → 토큰 만료 확인
+                                ├─ 유효: 기존 토큰 반환
+                                └─ 만료: refreshAccessToken() 호출
+                                        ├─ 성공: 새 토큰으로 교체
+                                        └─ 실패: error 플래그 추가
+```
+
+**테스트 방법:**
+
+1. 기존 세션 삭제 (로그아웃):
+   ```bash
+   # 대시보드에서 로그아웃 버튼 클릭
+   ```
+
+2. 재로그인하여 새로운 refresh_token 획득:
+   - Google OAuth 동의 화면에서 권한 승인
+   - `access_type: "offline"`, `prompt: "consent"` 설정으로 refresh_token 발급 보장
+
+3. 대시보드에서 캘린더 이벤트 조회:
+   - "캘린더 일정" 탭 클릭
+   - 이벤트 목록이 정상적으로 로드되는지 확인
+
+4. (선택) 토큰 만료 시뮬레이션:
+   - 브라우저 개발자 도구 → Application → Cookies
+   - `next-auth.session-token` 쿠키의 JWT 디코딩
+   - `accessTokenExpires` 값을 과거 시간으로 변경 (예: Date.now() - 1000)
+   - 페이지 새로고침 시 자동 갱신 확인
+
+**예상 효과:**
+
+- ✅ 캘린더 API 401 오류 해결
+- ✅ 사용자 재로그인 빈도 대폭 감소
+- ✅ 장기간 세션 유지 가능 (refresh_token 유효 기간: 약 6개월)
+- ✅ 사용자 경험 개선 (끊김 없는 서비스 이용)
+
+**문제 해결 로그:**
+
+- **문제:** `/api/calendar/events` 호출 시 "Request had invalid authentication credentials" 오류
+- **원인:** 액세스 토큰 만료 (1시간 경과)
+- **해결:** refresh_token을 사용한 자동 갱신 로직 구현
+- **결과:** 재로그인 없이 지속적인 캘린더 API 접근 가능
+
+---
+
 ## 다음 작업 예정
 - [x] Supabase PostgreSQL 데이터베이스 연결
 - [x] PrismaAdapter 활성화 및 마이그레이션 실행
