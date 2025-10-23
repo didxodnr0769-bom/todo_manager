@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Plus, CheckSquare, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 import AddTodoDialog from "./AddTodoDialog";
 import { getTodos, addTodo, toggleTodo, deleteTodo } from "@/app/actions/todos";
 
@@ -64,16 +65,27 @@ export default function TodoListSection({
     }
   };
 
-  // To-Do 완료 상태 변경
+  // To-Do 완료 상태 변경 (낙관적 업데이트)
   const handleToggleTodo = async (id: string, isCompleted: boolean) => {
+    // 1. 현재 상태 백업 (롤백용)
+    const previousTodos = [...todos];
+
+    // 2. 즉시 UI 업데이트 (낙관적)
+    setTodos(todos.map((todo) =>
+      todo.id === id ? { ...todo, isCompleted: !isCompleted } : todo
+    ));
+    setError(null);
+
+    // 3. 백그라운드에서 서버 요청
     try {
-      startTransition(async () => {
-        const updatedTodo = await toggleTodo(id, !isCompleted);
-        setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)));
-        setError(null);
-      });
+      await toggleTodo(id, !isCompleted);
+      // 성공 시 토스트 메시지
+      toast.success(!isCompleted ? "할 일을 완료했습니다!" : "할 일을 미완료로 변경했습니다!");
     } catch (err) {
+      // 4. 실패 시 롤백
+      setTodos(previousTodos);
       setError("할 일 상태 변경에 실패했습니다.");
+      toast.error("상태 변경에 실패했습니다.");
       console.error(err);
     }
   };
@@ -95,28 +107,28 @@ export default function TodoListSection({
   useEffect(() => {
     fetchTodos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate])
+  }, [selectedDate]);
 
-  const completedCount = todos.filter((t) => t.isCompleted).length
+  const completedCount = todos.filter((t) => t.isCompleted).length;
 
   // 시간 파싱 함수 (content에서 시간 정보 추출)
   const parseTimeFromContent = (content: string) => {
-    const timeMatch = content.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/)
+    const timeMatch = content.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
     if (timeMatch) {
       return {
         text: content.replace(timeMatch[0], "").trim(),
         time: timeMatch[0],
-      }
+      };
     }
-    return { text: content, time: null }
-  }
+    return { text: content, time: null };
+  };
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -159,7 +171,7 @@ export default function TodoListSection({
         ) : (
           <div>
             {todos.map((todo) => {
-              const { text, time } = parseTimeFromContent(todo.content)
+              const { text, time } = parseTimeFromContent(todo.content);
               return (
                 <div
                   key={todo.id}
@@ -168,7 +180,9 @@ export default function TodoListSection({
                   <div className="flex items-start gap-3">
                     {/* 체크박스 */}
                     <button
-                      onClick={() => handleToggleTodo(todo.id, todo.isCompleted)}
+                      onClick={() =>
+                        handleToggleTodo(todo.id, todo.isCompleted)
+                      }
                       className={`mt-1 w-4 h-4 rounded border flex-shrink-0 ${
                         todo.isCompleted
                           ? "bg-blue-500 border-blue-500"
@@ -218,7 +232,7 @@ export default function TodoListSection({
                     </button>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         )}
@@ -231,5 +245,5 @@ export default function TodoListSection({
         onAdd={handleDialogAdd}
       />
     </div>
-  )
+  );
 }
