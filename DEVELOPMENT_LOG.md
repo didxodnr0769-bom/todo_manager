@@ -409,6 +409,112 @@ app/
 
 ---
 
+#### 스와이프 제스처로 날짜 및 탭 변경 기능 구현
+**커밋:** `feat: 스와이프 제스처로 날짜 및 탭 변경 기능 구현` (5ac3531)
+
+**주요 변경사항:**
+
+1. **react-swipeable 라이브러리 추가**
+   - `package.json`: react-swipeable@7.0.2 의존성 추가
+   - 터치 제스처 감지를 위한 경량 라이브러리 (~10KB)
+   - React 19 호환 지원
+
+2. **DashboardClient.tsx 스와이프 핸들러 구현**
+   - `app/dashboard/DashboardClient.tsx:27-31`: changeDate 함수
+     - 날짜 변경 로직 추출
+     - 이전 날(-1), 다음 날(+1) 계산
+
+   - `app/dashboard/DashboardClient.tsx:34-40`: switchTab 함수
+     - 탭 전환 로직
+     - todos → calendar (왼쪽 스와이프)
+     - calendar → todos (오른쪽 스와이프)
+     - 경계 체크로 의도하지 않은 전환 방지
+
+   - `app/dashboard/DashboardClient.tsx:43-50`: dateSwipeHandlers
+     - 날짜 선택기 영역에 적용
+     - 왼쪽 스와이프: 다음 날로 이동
+     - 오른쪽 스와이프: 이전 날로 이동
+     - delta: 50px (최소 스와이프 거리)
+     - preventScrollOnSwipe: true (스크롤 방지)
+
+   - `app/dashboard/DashboardClient.tsx:53-60`: contentSwipeHandlers
+     - To-Do/캘린더 컨텐츠 영역에 적용
+     - 왼쪽 스와이프: todos → calendar 탭 전환
+     - 오른쪽 스와이프: calendar → todos 탭 전환
+
+3. **UI 적용**
+   - `app/dashboard/DashboardClient.tsx:70-76`: 날짜 선택기 영역
+     - dateSwipeHandlers를 래핑 div에 적용
+     - touch-pan-y 클래스로 세로 스크롤 허용
+
+   - `app/dashboard/DashboardClient.tsx:81-88`: 컨텐츠 영역
+     - contentSwipeHandlers를 래핑 div에 적용
+     - 탭 전환 시 자연스러운 UX 제공
+
+**기술적 결정:**
+
+- **react-swipeable 라이브러리 선택 이유:**
+  - React 19 호환성 확인
+  - 터치 이벤트와 마우스 이벤트 모두 지원
+  - 간단한 API (onSwipedLeft, onSwipedRight)
+  - 커스터마이징 가능 (delta, preventScrollOnSwipe 등)
+  - 경량 (~10KB), 의존성 없음
+
+- **스와이프 영역 구분 전략:**
+  - 날짜 영역: 날짜 선택기 + 오늘 버튼 영역만 날짜 변경
+  - 컨텐츠 영역: 할 일/캘린더 목록 영역에서 탭 전환
+  - 각 영역에 독립적인 핸들러 적용으로 명확한 제스처 분리
+  - 탭 버튼은 클릭만 가능하도록 스와이프 제거
+
+- **UX 고려사항:**
+  - delta 50px로 설정하여 의도하지 않은 스와이프 방지
+  - preventScrollOnSwipe로 스와이프 중 스크롤 차단
+  - touch-pan-y 클래스로 세로 스크롤은 정상 동작
+  - trackMouse: false로 데스크톱에서는 클릭만 가능
+
+**모바일 사용성 개선:**
+
+| 기능 | 이전 | 이후 |
+|------|------|------|
+| 날짜 변경 | 화살표 버튼 클릭만 가능 | 스와이프로 빠른 날짜 이동 |
+| 탭 전환 | 탭 버튼 클릭만 가능 | 컨텐츠 영역 스와이프로 전환 |
+| 제스처 피드백 | 없음 | 즉시 반응 |
+
+**테스트 방법:**
+
+1. 개발 서버 실행:
+   ```bash
+   npm run dev
+   # http://localhost:3002
+   ```
+
+2. 모바일 기기 테스트:
+   - 네트워크 URL 접속: http://192.168.0.182:3002
+   - 날짜 영역(달력 아이콘 부분)을 좌우로 스와이프
+   - 날짜가 이전/다음 날로 변경되는지 확인
+
+3. 탭 전환 테스트:
+   - 할 일 목록 또는 캘린더 일정 영역을 좌우로 스와이프
+   - "오늘의 할 일" ↔ "캘린더 일정" 전환 확인
+
+4. 세로 스크롤 확인:
+   - 할 일 목록이 긴 경우 세로 스크롤이 정상 동작하는지 확인
+   - 스와이프 제스처와 스크롤이 충돌하지 않는지 확인
+
+5. 엣지 케이스:
+   - "캘린더 일정" 탭에서 오른쪽으로 스와이프 → todos 탭으로 전환
+   - "오늘의 할 일" 탭에서 오른쪽으로 스와이프 → 아무 동작 없음 (경계)
+   - 짧은 스와이프(50px 미만) → 무시됨
+
+**예상 효과:**
+
+- ✅ 모바일에서 날짜 이동 속도 향상 (버튼 클릭 → 스와이프)
+- ✅ 탭 전환 편의성 증가
+- ✅ 직관적인 제스처 인터페이스 제공
+- ✅ 모바일 퍼스트 UX 강화
+
+---
+
 ## 다음 작업 예정
 - [x] Supabase PostgreSQL 데이터베이스 연결
 - [x] PrismaAdapter 활성화 및 마이그레이션 실행
