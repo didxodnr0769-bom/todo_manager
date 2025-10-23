@@ -116,20 +116,26 @@ export default function CalendarEventsSection({
       )}
 
       {/* To-Do 생성 버튼 */}
-      {selectedEventIds.size > 0 && (
-        <div className="flex justify-end">
-          <button
-            onClick={createTodosFromSelectedEvents}
-            disabled={isCreating}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium disabled:bg-gray-400"
-          >
-            <Plus className="w-4 h-4" />
-            {isCreating
-              ? "생성 중..."
-              : `To-Do 생성하기 (${selectedEventIds.size})`}
-          </button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <button
+          onClick={createTodosFromSelectedEvents}
+          disabled={isCreating || selectedEventIds.size === 0}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+            selectedEventIds.size === 0 && !isCreating
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : isCreating
+              ? "bg-gray-400 text-white cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          <Plus className="w-4 h-4" />
+          {isCreating
+            ? "생성 중..."
+            : selectedEventIds.size > 0
+            ? `To-Do 생성하기 (${selectedEventIds.size})`
+            : "To-Do 생성하기"}
+        </button>
+      </div>
 
       {/* 캘린더 이벤트 목록 */}
       {events.length === 0 ? (
