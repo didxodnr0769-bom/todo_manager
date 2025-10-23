@@ -1,112 +1,99 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Plus, CheckSquare, Trash2 } from "lucide-react"
-import AddTodoDialog from "./AddTodoDialog"
+import { useEffect, useState, useTransition } from "react";
+import { Plus, CheckSquare, Trash2 } from "lucide-react";
+import AddTodoDialog from "./AddTodoDialog";
+import { getTodos, addTodo, toggleTodo, deleteTodo } from "@/app/actions/todos";
 
 interface Todo {
-  id: string
-  content: string
-  isCompleted: boolean
-  date: string
-  createdAt: string
+  id: string;
+  content: string;
+  isCompleted: boolean;
+  date: Date;
+  createdAt: Date;
 }
 
 interface TodoListSectionProps {
-  selectedDate: string
+  selectedDate: string;
 }
 
-export default function TodoListSection({ selectedDate }: TodoListSectionProps) {
-  const [todos, setTodos] = useState<Todo[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+export default function TodoListSection({
+  selectedDate,
+}: TodoListSectionProps) {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [, startTransition] = useTransition();
 
   // To-Do 목록 조회
   const fetchTodos = async () => {
     try {
-      setIsLoading(true)
-      const response = await fetch(`/api/todos?date=${selectedDate}`)
-      if (!response.ok) throw new Error("Failed to fetch todos")
-      const data = await response.json()
-      setTodos(data)
-      setError(null)
+      setIsLoading(true);
+      const data = await getTodos(selectedDate);
+      setTodos(data);
+      setError(null);
     } catch (err) {
-      setError("할 일 목록을 불러오는데 실패했습니다.")
-      console.error(err)
+      setError("할 일 목록을 불러오는데 실패했습니다.");
+      console.error(err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // 다이얼로그에서 To-Do 추가
   const handleDialogAdd = async (todoData: {
-    content: string
-    startTime?: string
-    endTime?: string
+    content: string;
+    startTime?: string;
+    endTime?: string;
   }) => {
     try {
       const content =
         todoData.startTime && todoData.endTime
           ? `${todoData.content}`
-          : todoData.content
+          : todoData.content;
 
-      const response = await fetch("/api/todos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, date: selectedDate }),
-      })
-
-      if (!response.ok) throw new Error("Failed to create todo")
-
-      const createdTodo = await response.json()
-      setTodos([...todos, createdTodo])
-      setError(null)
+      startTransition(async () => {
+        const createdTodo = await addTodo(content, selectedDate);
+        setTodos([...todos, createdTodo]);
+        setError(null);
+      });
     } catch (err) {
-      setError("할 일 추가에 실패했습니다.")
-      console.error(err)
+      setError("할 일 추가에 실패했습니다.");
+      console.error(err);
     }
-  }
+  };
 
   // To-Do 완료 상태 변경
-  const toggleTodo = async (id: string, isCompleted: boolean) => {
+  const handleToggleTodo = async (id: string, isCompleted: boolean) => {
     try {
-      const response = await fetch(`/api/todos/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isCompleted: !isCompleted }),
-      })
-
-      if (!response.ok) throw new Error("Failed to update todo")
-
-      const updatedTodo = await response.json()
-      setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)))
-      setError(null)
+      startTransition(async () => {
+        const updatedTodo = await toggleTodo(id, !isCompleted);
+        setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)));
+        setError(null);
+      });
     } catch (err) {
-      setError("할 일 상태 변경에 실패했습니다.")
-      console.error(err)
+      setError("할 일 상태 변경에 실패했습니다.");
+      console.error(err);
     }
-  }
+  };
 
   // To-Do 삭제
-  const deleteTodo = async (id: string) => {
+  const handleDeleteTodo = async (id: string) => {
     try {
-      const response = await fetch(`/api/todos/${id}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) throw new Error("Failed to delete todo")
-
-      setTodos(todos.filter((todo) => todo.id !== id))
-      setError(null)
+      startTransition(async () => {
+        await deleteTodo(id);
+        setTodos(todos.filter((todo) => todo.id !== id));
+        setError(null);
+      });
     } catch (err) {
-      setError("할 일 삭제에 실패했습니다.")
-      console.error(err)
+      setError("할 일 삭제에 실패했습니다.");
+      console.error(err);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchTodos()
+    fetchTodos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
@@ -181,7 +168,7 @@ export default function TodoListSection({ selectedDate }: TodoListSectionProps) 
                   <div className="flex items-start gap-3">
                     {/* 체크박스 */}
                     <button
-                      onClick={() => toggleTodo(todo.id, todo.isCompleted)}
+                      onClick={() => handleToggleTodo(todo.id, todo.isCompleted)}
                       className={`mt-1 w-4 h-4 rounded border flex-shrink-0 ${
                         todo.isCompleted
                           ? "bg-blue-500 border-blue-500"
@@ -223,7 +210,7 @@ export default function TodoListSection({ selectedDate }: TodoListSectionProps) 
 
                     {/* 삭제 버튼 */}
                     <button
-                      onClick={() => deleteTodo(todo.id)}
+                      onClick={() => handleDeleteTodo(todo.id)}
                       className="opacity-0 group-hover:opacity-100 w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all flex-shrink-0"
                       aria-label="삭제"
                     >

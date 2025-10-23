@@ -1,92 +1,97 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Plus } from "lucide-react"
-import AddTodoDialog from "./AddTodoDialog"
+import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
+import AddTodoDialog from "./AddTodoDialog";
 
 interface Todo {
-  id: string
-  content: string
-  isCompleted: boolean
-  date: string
-  createdAt: string
+  id: string;
+  content: string;
+  isCompleted: boolean;
+  date: string;
+  createdAt: string;
 }
 
 export default function TodoList() {
-  const [todos, setTodos] = useState<Todo[]>([])
-  const [newTodo, setNewTodo] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [newTodo, setNewTodo] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
-  )
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // To-Do 목록 조회
   const fetchTodos = async (date?: string) => {
     try {
-      setIsLoading(true)
-      const dateParam = date || selectedDate
-      const response = await fetch(`/api/todos?date=${dateParam}`)
-      if (!response.ok) throw new Error("Failed to fetch todos")
-      const data = await response.json()
-      setTodos(data)
-      setError(null)
+      setIsLoading(true);
+      const dateParam = date || selectedDate;
+      const response = await fetch(`/api/todos?date=${dateParam}`);
+      if (!response.ok) throw new Error("Failed to fetch todos");
+      const data = await response.json();
+      setTodos(data);
+      setError(null);
     } catch (err) {
-      setError("할 일 목록을 불러오는데 실패했습니다.")
-      console.error(err)
+      setError("할 일 목록을 불러오는데 실패했습니다.");
+      console.error(err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // 새 To-Do 추가 (폼 제출)
   const addTodo = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newTodo.trim()) return
+    e.preventDefault();
+    if (!newTodo.trim()) return;
 
     try {
       const response = await fetch("/api/todos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: newTodo, date: selectedDate }),
-      })
+      });
 
-      if (!response.ok) throw new Error("Failed to create todo")
+      if (!response.ok) throw new Error("Failed to create todo");
 
-      const createdTodo = await response.json()
-      setTodos([...todos, createdTodo])
-      setNewTodo("")
-      setError(null)
+      const createdTodo = await response.json();
+      setTodos([...todos, createdTodo]);
+      setNewTodo("");
+      setError(null);
     } catch (err) {
-      setError("할 일 추가에 실패했습니다.")
-      console.error(err)
+      setError("할 일 추가에 실패했습니다.");
+      console.error(err);
     }
-  }
+  };
 
   // 다이얼로그에서 To-Do 추가
-  const handleDialogAdd = async (todoData: { content: string; startTime?: string; endTime?: string }) => {
+  const handleDialogAdd = async (todoData: {
+    content: string;
+    startTime?: string;
+    endTime?: string;
+  }) => {
     try {
-      const content = todoData.startTime && todoData.endTime
-        ? `${todoData.content} (${todoData.startTime} - ${todoData.endTime})`
-        : todoData.content
+      const content =
+        todoData.startTime && todoData.endTime
+          ? `${todoData.content} (${todoData.startTime} - ${todoData.endTime})`
+          : todoData.content;
 
       const response = await fetch("/api/todos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, date: selectedDate }),
-      })
+      });
 
-      if (!response.ok) throw new Error("Failed to create todo")
+      if (!response.ok) throw new Error("Failed to create todo");
 
-      const createdTodo = await response.json()
-      setTodos([...todos, createdTodo])
-      setError(null)
+      const createdTodo = await response.json();
+      setTodos([...todos, createdTodo]);
+      setError(null);
     } catch (err) {
-      setError("할 일 추가에 실패했습니다.")
-      console.error(err)
+      setError("할 일 추가에 실패했습니다.");
+      console.error(err);
     }
-  }
+  };
 
   // To-Do 완료 상태 변경
   const toggleTodo = async (id: string, isCompleted: boolean) => {
@@ -95,59 +100,59 @@ export default function TodoList() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isCompleted: !isCompleted }),
-      })
+      });
 
-      if (!response.ok) throw new Error("Failed to update todo")
+      if (!response.ok) throw new Error("Failed to update todo");
 
-      const updatedTodo = await response.json()
-      setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)))
-      setError(null)
+      const updatedTodo = await response.json();
+      setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)));
+      setError(null);
     } catch (err) {
-      setError("할 일 상태 변경에 실패했습니다.")
-      console.error(err)
+      setError("할 일 상태 변경에 실패했습니다.");
+      console.error(err);
     }
-  }
+  };
 
   // To-Do 삭제
   const deleteTodo = async (id: string) => {
     try {
       const response = await fetch(`/api/todos/${id}`, {
         method: "DELETE",
-      })
+      });
 
-      if (!response.ok) throw new Error("Failed to delete todo")
+      if (!response.ok) throw new Error("Failed to delete todo");
 
-      setTodos(todos.filter((todo) => todo.id !== id))
-      setError(null)
+      setTodos(todos.filter((todo) => todo.id !== id));
+      setError(null);
     } catch (err) {
-      setError("할 일 삭제에 실패했습니다.")
-      console.error(err)
+      setError("할 일 삭제에 실패했습니다.");
+      console.error(err);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchTodos()
+    fetchTodos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate])
+  }, [selectedDate]);
 
   // 날짜 변경 핸들러
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedDate(e.target.value)
-  }
+    setSelectedDate(e.target.value);
+  };
 
   // 이전/다음 날짜로 이동
   const changeDate = (days: number) => {
-    const currentDate = new Date(selectedDate)
-    currentDate.setDate(currentDate.getDate() + days)
-    setSelectedDate(currentDate.toISOString().split("T")[0])
-  }
+    const currentDate = new Date(selectedDate);
+    currentDate.setDate(currentDate.getDate() + days);
+    setSelectedDate(currentDate.toISOString().split("T")[0]);
+  };
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -181,7 +186,9 @@ export default function TodoList() {
           →
         </button>
         <button
-          onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}
+          onClick={() =>
+            setSelectedDate(new Date().toISOString().split("T")[0])
+          }
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
         >
           오늘
@@ -272,5 +279,5 @@ export default function TodoList() {
         onAdd={handleDialogAdd}
       />
     </div>
-  )
+  );
 }
