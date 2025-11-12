@@ -118,7 +118,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return {
           ...session,
           error: "RefreshAccessTokenError",
-        } as any
+        }
       }
 
       // JWT 전략 사용 시 token.sub에서 사용자 ID 가져오기
