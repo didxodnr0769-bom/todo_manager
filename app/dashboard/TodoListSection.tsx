@@ -270,7 +270,10 @@ export default function TodoListSection({
                     </button>
 
                     {/* 내용 */}
-                    <div className="flex-1 min-w-0">
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => handleToggleTodo(todo.id, todo.isCompleted)}
+                    >
                       <p
                         className={`text-base ${
                           todo.isCompleted
@@ -287,8 +290,11 @@ export default function TodoListSection({
 
                     {/* 삭제 버튼 */}
                     <button
-                      onClick={() => handleDeleteTodo(todo.id)}
-                      className="opacity-0 group-hover:opacity-100 w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/20 transition-all duration-200 flex-shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTodo(todo.id);
+                      }}
+                      className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/20 transition-all duration-200 flex-shrink-0"
                       aria-label="삭제"
                     >
                       <Trash2 className="w-4 h-4 text-gray-600" />

@@ -189,7 +189,10 @@ export default function YesterdayTodos() {
                     />
 
                     {/* 내용 */}
-                    <div className="flex-1 min-w-0">
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => toggleSelect(todo.id)}
+                    >
                       <p className="text-base text-gray-700">{text}</p>
                       {time && (
                         <p className="text-sm text-gray-500 mt-1">{time}</p>
