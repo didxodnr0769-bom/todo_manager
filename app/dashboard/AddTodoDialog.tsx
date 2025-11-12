@@ -52,16 +52,16 @@ export default function AddTodoDialog({ isOpen, onClose, onAdd }: AddTodoDialogP
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="bg-pink-50/95 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-2xl border border-pink-200/50">
         {/* Header */}
-        <div className="flex items-center justify-center relative border-b p-6">
-          <h2 className="text-lg font-medium">새 일정 추가</h2>
+        <div className="flex items-center justify-center relative border-b border-pink-200/50 p-6">
+          <h2 className="text-lg font-semibold text-gray-700">새 일정 추가</h2>
           <button
             onClick={handleCancel}
-            className="absolute right-4 top-4 p-1 hover:bg-gray-100 rounded"
+            className="absolute right-4 top-4 p-1 hover:bg-pink-100/50 rounded-lg transition-all duration-200"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-gray-600" />
           </button>
         </div>
 
@@ -69,7 +69,7 @@ export default function AddTodoDialog({ isOpen, onClose, onAdd }: AddTodoDialogP
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Title Input */}
           <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium text-gray-700">
+            <label htmlFor="title" className="text-sm font-semibold text-gray-700">
               일정 제목
             </label>
             <input
@@ -78,29 +78,29 @@ export default function AddTodoDialog({ isOpen, onClose, onAdd }: AddTodoDialogP
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 주간 회의"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-white/70 border-2 border-pink-200/60 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-300 focus:bg-white transition-all duration-200"
               autoFocus
             />
           </div>
 
           {/* Time Selection */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">시간 (선택사항)</label>
+            <label className="text-sm font-semibold text-gray-700">시간 (선택사항)</label>
             <div className="grid grid-cols-2 gap-4">
               {/* Start Time */}
               <div className="space-y-2">
-                <label htmlFor="startTime" className="text-sm text-gray-600">
+                <label htmlFor="startTime" className="text-sm font-medium text-gray-600">
                   시작 시간
                 </label>
                 <select
                   id="startTime"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2.5 bg-white/70 border-2 border-pink-200/60 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-300 focus:bg-white text-sm transition-all duration-200"
                 >
-                  <option value="">선택</option>
+                  <option value="" className="bg-white">선택</option>
                   {timeSlots.map((time) => (
-                    <option key={`start-${time}`} value={time}>
+                    <option key={`start-${time}`} value={time} className="bg-white">
                       {time}
                     </option>
                   ))}
@@ -109,18 +109,18 @@ export default function AddTodoDialog({ isOpen, onClose, onAdd }: AddTodoDialogP
 
               {/* End Time */}
               <div className="space-y-2">
-                <label htmlFor="endTime" className="text-sm text-gray-600">
+                <label htmlFor="endTime" className="text-sm font-medium text-gray-600">
                   종료 시간
                 </label>
                 <select
                   id="endTime"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2.5 bg-white/70 border-2 border-pink-200/60 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-300 focus:bg-white text-sm transition-all duration-200"
                 >
-                  <option value="">선택</option>
+                  <option value="" className="bg-white">선택</option>
                   {timeSlots.map((time) => (
-                    <option key={`end-${time}`} value={time}>
+                    <option key={`end-${time}`} value={time} className="bg-white">
                       {time}
                     </option>
                   ))}
@@ -134,14 +134,14 @@ export default function AddTodoDialog({ isOpen, onClose, onAdd }: AddTodoDialogP
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white/50 hover:bg-white/80 rounded-xl transition-all duration-200 border border-gray-200/50"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={!title.trim()}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="px-5 py-2.5 text-sm font-semibold bg-pink-300 text-white rounded-xl hover:bg-pink-400 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
             >
               추가
             </button>
