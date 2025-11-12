@@ -515,6 +515,114 @@ app/
 
 ---
 
+#### 구글 캘린더 인증 토큰 만료 에러 처리 개선
+**커밋:** (예정)
+
+**주요 변경사항:**
+
+1. **API 라우트에 토큰 에러 감지 및 상세 메시지 추가**
+   - `app/api/calendar/events/route.ts:115-149`: Google API 에러 응답 구분 처리 추가
+   - `invalid_grant`, `Token has been expired`: 토큰 만료 에러 → 401 with code "TOKEN_EXPIRED"
+   - `Invalid Credentials`, 401 에러: 인증 정보 무효 → 401 with code "INVALID_CREDENTIALS"
+   - 각 에러 타입별로 한글 에러 메시지 제공하여 사용자 친화적 피드백 제공
+
+2. **프론트엔드 401 에러 핸들링 강화**
+   - `app/dashboard/CalendarEventsSection.tsx:35-66`: TanStack Query 에러 처리 개선
+   - queryFn에서 response.status === 401 또는 에러 코드 확인
+   - 인증 에러 시 재시도하지 않고 즉시 실패 처리 (retry 로직 커스터마이징)
+   - `isAuthError` 플래그로 인증 에러 구분
+
+   - `app/dashboard/CalendarEventsSection.tsx:127-148`: 에러 UI 개선
+   - 인증 에러와 일반 에러를 구분하여 표시 (🔒 vs ⚠️)
+   - 인증 에러 시 "다시 로그인하기" 버튼 제공
+   - 버튼 클릭 시 `/api/auth/signin`으로 리다이렉트
+
+3. **JWT 콜백에 에러 상태 체크 로직 추가**
+   - `lib/auth.ts:114-122`: session 콜백에서 RefreshAccessTokenError 감지
+   - 토큰 갱신 실패 시 세션 객체에 error 속성 추가
+   - 프론트엔드에서 세션 에러 상태 확인 가능하도록 전달
+
+4. **디버깅용 세션 정보 API 개선**
+   - `app/api/debug/session/route.ts:1-60`: 세션 디버깅 API 개선
+   - 프로덕션 환경에서는 403 에러 반환 (보안 강화)
+   - `hasAuthError`, `errorType` 필드 추가로 토큰 갱신 실패 감지
+   - `recommendation` 필드로 사용자에게 조치 사항 안내
+
+**기술적 결정:**
+
+- **에러 구분 전략:**
+  - Google API에서 반환하는 다양한 에러 메시지 패턴 분석
+  - `invalid_grant`: refresh_token 만료 또는 취소
+  - `Token has been expired`: 액세스 토큰 만료
+  - `Invalid Credentials`: 잘못된 토큰 또는 권한 부족
+  - 각 에러에 고유한 에러 코드 부여로 프론트엔드에서 적절한 대응 가능
+
+- **사용자 경험 개선:**
+  - 단순히 "이벤트 조회 실패"가 아닌 구체적인 원인 제시
+  - 재로그인 버튼으로 사용자가 즉시 문제 해결 가능
+  - 토스트 알림 대신 에러 UI에 버튼 제공하여 명확한 액션 유도
+
+- **개발자 경험 개선:**
+  - `/api/debug/session` 엔드포인트로 토큰 상태 실시간 확인
+  - 개발 환경에서만 동작하여 보안 유지
+  - 에러 타입, 토큰 유무, 세션 상태를 한눈에 파악 가능
+
+**에러 처리 흐름:**
+
+```
+캘린더 API 호출 → 401 에러 발생 → 에러 메시지 파싱
+                    ├─ invalid_grant → TOKEN_EXPIRED 반환
+                    ├─ Invalid Credentials → INVALID_CREDENTIALS 반환
+                    └─ 기타 → 500 Internal Server Error
+
+프론트엔드 수신 → isAuthError = true → "다시 로그인하기" 버튼 표시
+사용자 클릭 → /api/auth/signin → Google OAuth 재인증 → 새 토큰 발급
+```
+
+**테스트 방법:**
+
+1. 세션 정보 확인:
+   ```bash
+   curl http://localhost:3001/api/debug/session
+   # hasAuthError, errorType, accessTokenPreview 확인
+   ```
+
+2. 토큰 만료 시뮬레이션:
+   - 브라우저 개발자 도구 → Application → Cookies
+   - `next-auth.session-token` 쿠키의 JWT 디코딩
+   - `accessToken`을 임의의 값으로 변경하여 무효화
+
+3. 캘린더 이벤트 조회:
+   - 대시보드에서 "캘린더 일정" 탭 클릭
+   - 예상: 🔒 인증 만료 에러 박스 + "다시 로그인하기" 버튼 표시
+
+4. 재로그인 테스트:
+   - "다시 로그인하기" 버튼 클릭
+   - Google OAuth 화면으로 리다이렉트 확인
+   - 재로그인 후 캘린더 이벤트 정상 조회 확인
+
+**문제 해결 로그:**
+
+- **문제:** 사용 중 "이벤트 조회 실패" 에러 발생, 원인 불명
+- **원인 분석:**
+  1. Google OAuth 액세스 토큰 만료 (1시간 후)
+  2. refresh_token 갱신 실패 (권한 취소 또는 만료)
+  3. 프론트엔드에서 에러 구분 없이 단순히 "실패" 메시지만 표시
+- **해결 방법:**
+  - API 레벨에서 에러 타입 구분 및 명확한 에러 코드 반환
+  - 프론트엔드에서 401 에러 감지 시 재로그인 유도
+  - JWT 콜백에서 토큰 갱신 실패 감지 및 세션에 에러 상태 전달
+- **결과:** 사용자가 토큰 만료 상황을 명확히 인지하고 즉시 재인증 가능
+
+**예상 효과:**
+
+- ✅ 토큰 만료로 인한 API 실패 원인 명확히 파악
+- ✅ 사용자 스스로 문제 해결 가능 (재로그인 버튼)
+- ✅ 개발자가 디버깅 API로 세션 상태 실시간 확인
+- ✅ 에러 발생 시 사용자 이탈률 감소
+
+---
+
 ## 다음 작업 예정
 - [x] Supabase PostgreSQL 데이터베이스 연결
 - [x] PrismaAdapter 활성화 및 마이그레이션 실행

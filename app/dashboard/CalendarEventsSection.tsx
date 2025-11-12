@@ -33,19 +33,37 @@ export default function CalendarEventsSection({
 
   // 캘린더 이벤트 조회 (TanStack Query)
   const {
-    data: events = [],
+    data: eventsData,
     isLoading,
     error,
   } = useQuery({
     queryKey: ["calendar-events", selectedDate],
     queryFn: async () => {
       const response = await fetch(`/api/calendar/events?date=${selectedDate}`);
-      if (!response.ok) throw new Error("Failed to fetch events");
       const data = await response.json();
-      return data.events as CalendarEvent[];
+
+      if (!response.ok) {
+        // 401 에러이거나 토큰 관련 에러인 경우
+        if (response.status === 401 || data.code === "TOKEN_EXPIRED" || data.code === "INVALID_CREDENTIALS") {
+          throw new Error(data.message || "인증이 필요합니다. 다시 로그인해주세요.");
+        }
+        throw new Error(data.details || "Failed to fetch events");
+      }
+
+      return { events: data.events as CalendarEvent[], isAuthError: false };
     },
     staleTime: 5 * 60 * 1000, // 5분
+    retry: (failureCount, error) => {
+      // 인증 에러는 재시도하지 않음
+      if (error.message.includes("로그인")) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
+
+  const events = eventsData?.events || [];
+  const isAuthError = error?.message.includes("로그인") || error?.message.includes("인증");
 
   // To-Do 생성 Mutation
   const createTodosMutation = useMutation({
@@ -108,8 +126,23 @@ export default function CalendarEventsSection({
 
   if (error) {
     return (
-      <div className="p-3 glass-effect-strong border border-red-400/30 rounded-2xl text-red-700 text-sm glass-shadow">
-        이벤트를 불러오는데 실패했습니다.
+      <div className="p-6 glass-effect-strong border border-red-400/30 rounded-2xl glass-shadow">
+        <div className="space-y-3">
+          <div className="text-red-700 font-medium">
+            {isAuthError ? "🔒 인증 만료" : "⚠️ 오류 발생"}
+          </div>
+          <p className="text-sm text-red-600">
+            {error.message || "이벤트를 불러오는데 실패했습니다."}
+          </p>
+          {isAuthError && (
+            <button
+              onClick={() => window.location.href = "/api/auth/signin"}
+              className="w-full px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors text-sm font-medium"
+            >
+              다시 로그인하기
+            </button>
+          )}
+        </div>
       </div>
     );
   }

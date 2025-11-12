@@ -115,6 +115,30 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     console.error("Calendar API error:", error)
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
+
+    // Google API 에러 처리
+    if (errorMessage.includes("invalid_grant") || errorMessage.includes("Token has been expired")) {
+      return NextResponse.json(
+        {
+          error: "Token expired",
+          message: "인증 토큰이 만료되었습니다. 다시 로그인해주세요.",
+          code: "TOKEN_EXPIRED"
+        },
+        { status: 401 }
+      )
+    }
+
+    if (errorMessage.includes("Invalid Credentials") || errorMessage.includes("401")) {
+      return NextResponse.json(
+        {
+          error: "Invalid credentials",
+          message: "인증 정보가 유효하지 않습니다. 다시 로그인해주세요.",
+          code: "INVALID_CREDENTIALS"
+        },
+        { status: 401 }
+      )
+    }
+
     return NextResponse.json(
       {
         error: "Failed to fetch calendar events",

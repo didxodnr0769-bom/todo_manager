@@ -112,6 +112,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     async session({ session, token }) {
+      // 토큰 갱신 에러가 있는 경우 세션 무효화
+      if (token.error === "RefreshAccessTokenError") {
+        // 에러 상태를 세션에 전달하지 않고 null 반환하여 세션 무효화
+        return {
+          ...session,
+          error: "RefreshAccessTokenError",
+        } as any
+      }
+
       // JWT 전략 사용 시 token.sub에서 사용자 ID 가져오기
       if (session.user && token.sub) {
         session.user.id = token.sub
