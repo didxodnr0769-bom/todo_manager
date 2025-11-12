@@ -23,6 +23,12 @@ export default function DashboardClient({
   );
   const [activeTab, setActiveTab] = useState<"todos" | "calendar">("todos");
 
+  // 오늘 날짜인지 확인하는 함수
+  const isToday = () => {
+    const today = new Date().toISOString().split("T")[0];
+    return selectedDate === today;
+  };
+
   // 날짜 변경 함수
   const changeDate = (days: number) => {
     const currentDate = new Date(selectedDate);
@@ -86,8 +92,8 @@ export default function DashboardClient({
           )}
         </div>
 
-        {/* 어제 완료하지 못한 할 일 */}
-        <YesterdayTodos />
+        {/* 어제 완료하지 못한 할 일 (오늘의 할일 탭 & 오늘 날짜에만 표시) */}
+        {activeTab === "todos" && isToday() && <YesterdayTodos />}
       </div>
     </div>
   );
