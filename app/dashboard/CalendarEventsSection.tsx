@@ -1,82 +1,83 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Plus } from "lucide-react"
+import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 
 interface CalendarEvent {
-  id: string
-  summary: string
-  description?: string
-  start: string
-  end: string
-  location?: string
-  calendarId?: string
-  calendarName?: string
-  backgroundColor?: string
-  foregroundColor?: string
+  id: string;
+  summary: string;
+  description?: string;
+  start: string;
+  end: string;
+  location?: string;
+  calendarId?: string;
+  calendarName?: string;
+  backgroundColor?: string;
+  foregroundColor?: string;
+  isAllDay?: boolean;
 }
 
 interface CalendarEventsSectionProps {
-  selectedDate: string
+  selectedDate: string;
 }
 
 export default function CalendarEventsSection({
   selectedDate,
 }: CalendarEventsSectionProps) {
-  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(
     new Set()
-  )
-  const [isLoading, setIsLoading] = useState(true)
-  const [isCreating, setIsCreating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 이벤트 조회
   const fetchEvents = async () => {
     try {
-      setIsLoading(true)
-      const response = await fetch(`/api/calendar/events?date=${selectedDate}`)
-      if (!response.ok) throw new Error("Failed to fetch events")
-      const data = await response.json()
-      setEvents(data.events)
-      setError(null)
+      setIsLoading(true);
+      const response = await fetch(`/api/calendar/events?date=${selectedDate}`);
+      if (!response.ok) throw new Error("Failed to fetch events");
+      const data = await response.json();
+      setEvents(data.events);
+      setError(null);
     } catch (err) {
-      setError("이벤트를 불러오는데 실패했습니다.")
-      console.error(err)
+      setError("이벤트를 불러오는데 실패했습니다.");
+      console.error(err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchEvents()
+    fetchEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate])
+  }, [selectedDate]);
 
   // 체크박스 토글
   const toggleEventSelection = (eventId: string) => {
     setSelectedEventIds((prev) => {
-      const newSet = new Set(prev)
+      const newSet = new Set(prev);
       if (newSet.has(eventId)) {
-        newSet.delete(eventId)
+        newSet.delete(eventId);
       } else {
-        newSet.add(eventId)
+        newSet.add(eventId);
       }
-      return newSet
-    })
-  }
+      return newSet;
+    });
+  };
 
   // 선택된 일정으로 To-Do 생성
   const createTodosFromSelectedEvents = async () => {
-    if (selectedEventIds.size === 0) return
+    if (selectedEventIds.size === 0) return;
 
     try {
-      setIsCreating(true)
-      setError(null)
+      setIsCreating(true);
+      setError(null);
 
       const selectedEvents = events.filter((event) =>
         selectedEventIds.has(event.id)
-      )
+      );
 
       const createPromises = selectedEvents.map((event) =>
         fetch("/api/todos", {
@@ -87,24 +88,24 @@ export default function CalendarEventsSection({
             date: selectedDate,
           }),
         })
-      )
+      );
 
-      await Promise.all(createPromises)
-      window.location.reload()
+      await Promise.all(createPromises);
+      window.location.reload();
     } catch (err) {
-      setError("To-Do 생성에 실패했습니다.")
-      console.error(err)
+      setError("To-Do 생성에 실패했습니다.");
+      console.error(err);
     } finally {
-      setIsCreating(false)
+      setIsCreating(false);
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -217,15 +218,21 @@ export default function CalendarEventsSection({
                     </p>
                   )}
                   <div className="text-sm text-gray-500 mt-1">
-                    {new Date(event.start).toLocaleTimeString("ko-KR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
-                    -{" "}
-                    {new Date(event.end).toLocaleTimeString("ko-KR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {event.isAllDay ? (
+                      "하루종일"
+                    ) : (
+                      <>
+                        {new Date(event.start).toLocaleTimeString("ko-KR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        -{" "}
+                        {new Date(event.end).toLocaleTimeString("ko-KR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </>
+                    )}
                   </div>
                   {event.location && (
                     <div className="text-sm text-gray-500 mt-1">
@@ -239,5 +246,5 @@ export default function CalendarEventsSection({
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -39,6 +39,9 @@ export async function GET(request: Request) {
     const nextDay = new Date(targetDate)
     nextDay.setDate(nextDay.getDate() + 1)
 
+    // 날짜 비교를 위한 targetDateString (YYYY-MM-DD 형식)
+    const targetDateString = targetDate.toISOString().split('T')[0]
+
     // 모든 캘린더 목록 가져오기
     const calendarListResponse = await calendar.calendarList.list()
     const calendars = calendarListResponse.data.items || []
@@ -56,18 +59,36 @@ export async function GET(request: Request) {
 
         const events = response.data.items || []
 
-        return events.map((event) => ({
-          id: event.id,
-          summary: event.summary,
-          description: event.description,
-          start: event.start?.dateTime || event.start?.date,
-          end: event.end?.dateTime || event.end?.date,
-          location: event.location,
-          calendarId: cal.id,
-          calendarName: cal.summary,
-          backgroundColor: cal.backgroundColor,
-          foregroundColor: cal.foregroundColor,
-        }))
+        return events
+          .map((event) => {
+            const isAllDay = !event.start?.dateTime && !!event.start?.date
+            const startDate = event.start?.dateTime || event.start?.date
+            const endDate = event.end?.dateTime || event.end?.date
+
+            return {
+              id: event.id,
+              summary: event.summary,
+              description: event.description,
+              start: startDate,
+              end: endDate,
+              location: event.location,
+              calendarId: cal.id,
+              calendarName: cal.summary,
+              backgroundColor: cal.backgroundColor,
+              foregroundColor: cal.foregroundColor,
+              isAllDay,
+            }
+          })
+          .filter((event) => {
+            // 하루종일 이벤트의 경우, end 날짜가 targetDate보다 크거나 같아야 함
+            // 예: 11월 12일 하루종일 이벤트는 start: 2025-11-11, end: 2025-11-12
+            // targetDate가 2025-11-12일 때는 표시되어야 하므로 end >= targetDate
+            if (event.isAllDay && event.end) {
+              const endDateOnly = event.end.split('T')[0] // YYYY-MM-DD만 추출
+              return endDateOnly > targetDateString // end가 targetDate보다 커야 해당 날짜 포함
+            }
+            return true // 일반 이벤트는 모두 포함
+          })
       } catch (error) {
         console.error(`Error fetching events for calendar ${cal.id}:`, error)
         return []
