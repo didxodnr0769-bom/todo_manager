@@ -44,14 +44,14 @@ export default function Header({ userName, userEmail }: HeaderProps) {
   }, [isProfileOpen])
 
   return (
-    <header className="bg-white border-b border-gray-200">
+    <header className="bg-white/95 backdrop-blur-md glass-shadow relative z-20 sticky top-0 border-b border-gray-200/50">
       <div className="flex items-center justify-between px-4 py-3">
-        <h1 className="text-xl font-bold text-gray-900">To-Do Manager</h1>
+        <h1 className="text-xl font-bold text-gray-700 drop-shadow-sm">To-Do Manager</h1>
 
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="w-8 h-8 rounded-full bg-blue-500 text-white font-medium flex items-center justify-center hover:bg-blue-600 transition-colors"
+            className="w-8 h-8 rounded-full bg-white/40 backdrop-blur-sm text-gray-700 font-medium flex items-center justify-center hover:bg-white/60 transition-all duration-300 glass-shadow"
             title={userName || "사용자"}
           >
             {getInitial(userName)}
@@ -59,13 +59,13 @@ export default function Header({ userName, userEmail }: HeaderProps) {
 
           {/* 프로필 모달 */}
           {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+            <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-md rounded-2xl glass-shadow-strong py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 border border-white/40">
               {/* 사용자 정보 */}
-              <div className="px-4 py-3 border-b border-gray-200">
-                <p className="text-sm font-medium text-gray-900">
+              <div className="px-4 py-3 border-b border-gray-300/30">
+                <p className="text-sm font-medium text-gray-700">
                   {userName || "사용자"}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-600 mt-1">
                   {userEmail || "이메일 없음"}
                 </p>
               </div>
@@ -73,7 +73,7 @@ export default function Header({ userName, userEmail }: HeaderProps) {
               {/* 로그아웃 버튼 */}
               <button
                 onClick={handleSignOut}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-white/20 transition-all duration-200 flex items-center gap-2 rounded-lg"
               >
                 <LogOut className="w-4 h-4" />
                 로그아웃

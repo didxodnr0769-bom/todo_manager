@@ -66,12 +66,17 @@ export default function DashboardClient({
   });
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-blue-50 relative">
+      {/* 배경 장식 요소들 */}
+      <div className="fixed top-0 left-0 w-96 h-96 bg-pink-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '0s' }}></div>
+      <div className="fixed bottom-0 right-0 w-96 h-96 bg-purple-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '2s' }}></div>
+      <div className="fixed top-1/2 left-1/2 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '4s' }}></div>
+
       {/* 헤더 */}
       <Header userName={userName} userEmail={userEmail} />
 
       {/* 메인 컨텐츠 */}
-      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-md mx-auto px-4 py-6 space-y-6 relative z-10">
         {/* 날짜 선택기 (스와이프로 날짜 변경) */}
         <div {...dateSwipeHandlers} className="touch-pan-y">
           <DatePicker
