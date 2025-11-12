@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState } from "react";
 import { Plus, CheckSquare, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AddTodoDialog from "./AddTodoDialog";
 import { getTodos, addTodo, toggleTodo, deleteTodo } from "@/app/actions/todos";
 
@@ -21,26 +22,129 @@ interface TodoListSectionProps {
 export default function TodoListSection({
   selectedDate,
 }: TodoListSectionProps) {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [, startTransition] = useTransition();
+  const queryClient = useQueryClient();
 
-  // To-Do 목록 조회
-  const fetchTodos = async () => {
-    try {
-      setIsLoading(true);
-      const data = await getTodos(selectedDate);
-      setTodos(data);
-      setError(null);
-    } catch (err) {
-      setError("할 일 목록을 불러오는데 실패했습니다.");
+  // To-Do 목록 조회 (TanStack Query)
+  const {
+    data: todos = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["todos", selectedDate],
+    queryFn: () => getTodos(selectedDate),
+    staleTime: 60 * 1000, // 1분
+  });
+
+  // To-Do 추가 Mutation
+  const addTodoMutation = useMutation({
+    mutationFn: ({ content, date }: { content: string; date: string }) =>
+      addTodo(content, date),
+    onMutate: async (newTodo) => {
+      // 낙관적 업데이트를 위해 이전 쿼리 취소
+      await queryClient.cancelQueries({ queryKey: ["todos", selectedDate] });
+
+      // 이전 데이터 백업
+      const previousTodos = queryClient.getQueryData<Todo[]>(["todos", selectedDate]);
+
+      // 낙관적 업데이트
+      if (previousTodos) {
+        const optimisticTodo: Todo = {
+          id: `temp-${Date.now()}`,
+          content: newTodo.content,
+          isCompleted: false,
+          date: new Date(newTodo.date),
+          createdAt: new Date(),
+        };
+        queryClient.setQueryData<Todo[]>(
+          ["todos", selectedDate],
+          [...previousTodos, optimisticTodo]
+        );
+      }
+
+      return { previousTodos };
+    },
+    onError: (err, newTodo, context) => {
+      // 에러 시 롤백
+      if (context?.previousTodos) {
+        queryClient.setQueryData(["todos", selectedDate], context.previousTodos);
+      }
+      toast.error("할 일 추가에 실패했습니다.");
       console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    onSuccess: () => {
+      toast.success("할 일이 추가되었습니다!");
+    },
+    onSettled: () => {
+      // 성공/실패와 관계없이 쿼리 갱신
+      queryClient.invalidateQueries({ queryKey: ["todos", selectedDate] });
+    },
+  });
+
+  // To-Do 완료 상태 변경 Mutation
+  const toggleTodoMutation = useMutation({
+    mutationFn: ({ id, isCompleted }: { id: string; isCompleted: boolean }) =>
+      toggleTodo(id, isCompleted),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["todos", selectedDate] });
+
+      const previousTodos = queryClient.getQueryData<Todo[]>(["todos", selectedDate]);
+
+      if (previousTodos) {
+        queryClient.setQueryData<Todo[]>(
+          ["todos", selectedDate],
+          previousTodos.map((todo) =>
+            todo.id === variables.id
+              ? { ...todo, isCompleted: variables.isCompleted }
+              : todo
+          )
+        );
+      }
+
+      return { previousTodos };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousTodos) {
+        queryClient.setQueryData(["todos", selectedDate], context.previousTodos);
+      }
+      toast.error("상태 변경에 실패했습니다.");
+      console.error(err);
+    },
+    onSuccess: (_, variables) => {
+      toast.success(
+        variables.isCompleted ? "할 일을 완료했습니다!" : "할 일을 미완료로 변경했습니다!"
+      );
+    },
+  });
+
+  // To-Do 삭제 Mutation
+  const deleteTodoMutation = useMutation({
+    mutationFn: (id: string) => deleteTodo(id),
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: ["todos", selectedDate] });
+
+      const previousTodos = queryClient.getQueryData<Todo[]>(["todos", selectedDate]);
+
+      if (previousTodos) {
+        queryClient.setQueryData<Todo[]>(
+          ["todos", selectedDate],
+          previousTodos.filter((todo) => todo.id !== deletedId)
+        );
+      }
+
+      return { previousTodos };
+    },
+    onError: (err, deletedId, context) => {
+      if (context?.previousTodos) {
+        queryClient.setQueryData(["todos", selectedDate], context.previousTodos);
+      }
+      toast.error("할 일 삭제에 실패했습니다.");
+      console.error(err);
+    },
+    onSuccess: () => {
+      toast.success("할 일이 삭제되었습니다!");
+    },
+  });
 
   // 다이얼로그에서 To-Do 추가
   const handleDialogAdd = async (todoData: {
@@ -48,66 +152,23 @@ export default function TodoListSection({
     startTime?: string;
     endTime?: string;
   }) => {
-    try {
-      const content =
-        todoData.startTime && todoData.endTime
-          ? `${todoData.content}`
-          : todoData.content;
+    const content =
+      todoData.startTime && todoData.endTime
+        ? `${todoData.content}`
+        : todoData.content;
 
-      startTransition(async () => {
-        const createdTodo = await addTodo(content, selectedDate);
-        setTodos([...todos, createdTodo]);
-        setError(null);
-      });
-    } catch (err) {
-      setError("할 일 추가에 실패했습니다.");
-      console.error(err);
-    }
+    addTodoMutation.mutate({ content, date: selectedDate });
   };
 
-  // To-Do 완료 상태 변경 (낙관적 업데이트)
-  const handleToggleTodo = async (id: string, isCompleted: boolean) => {
-    // 1. 현재 상태 백업 (롤백용)
-    const previousTodos = [...todos];
-
-    // 2. 즉시 UI 업데이트 (낙관적)
-    setTodos(todos.map((todo) =>
-      todo.id === id ? { ...todo, isCompleted: !isCompleted } : todo
-    ));
-    setError(null);
-
-    // 3. 백그라운드에서 서버 요청
-    try {
-      await toggleTodo(id, !isCompleted);
-      // 성공 시 토스트 메시지
-      toast.success(!isCompleted ? "할 일을 완료했습니다!" : "할 일을 미완료로 변경했습니다!");
-    } catch (err) {
-      // 4. 실패 시 롤백
-      setTodos(previousTodos);
-      setError("할 일 상태 변경에 실패했습니다.");
-      toast.error("상태 변경에 실패했습니다.");
-      console.error(err);
-    }
+  // To-Do 완료 상태 변경
+  const handleToggleTodo = (id: string, isCompleted: boolean) => {
+    toggleTodoMutation.mutate({ id, isCompleted: !isCompleted });
   };
 
   // To-Do 삭제
-  const handleDeleteTodo = async (id: string) => {
-    try {
-      startTransition(async () => {
-        await deleteTodo(id);
-        setTodos(todos.filter((todo) => todo.id !== id));
-        setError(null);
-      });
-    } catch (err) {
-      setError("할 일 삭제에 실패했습니다.");
-      console.error(err);
-    }
+  const handleDeleteTodo = (id: string) => {
+    deleteTodoMutation.mutate(id);
   };
-
-  useEffect(() => {
-    fetchTodos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
 
   const completedCount = todos.filter((t) => t.isCompleted).length;
 
@@ -131,14 +192,16 @@ export default function TodoListSection({
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-3 glass-effect-strong border border-red-400/30 rounded-2xl text-red-700 text-sm glass-shadow">
+        할 일 목록을 불러오는데 실패했습니다.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="p-3 glass-effect-strong border border-red-400/30 rounded-2xl text-red-700 text-sm glass-shadow">
-          {error}
-        </div>
-      )}
-
       {/* 일정 추가 버튼 */}
       <div className="flex justify-end">
         <button

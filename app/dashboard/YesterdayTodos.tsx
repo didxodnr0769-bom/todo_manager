@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronUp, ChevronDown, ArrowRight } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 interface Todo {
   id: string;
@@ -12,11 +14,9 @@ interface Todo {
 }
 
 export default function YesterdayTodos() {
-  const [yesterdayTodos, setYesterdayTodos] = useState<Todo[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isMoving, setIsMoving] = useState(false);
+  const queryClient = useQueryClient();
 
   // 어제 날짜 계산
   const getYesterdayDate = () => {
@@ -25,28 +25,48 @@ export default function YesterdayTodos() {
     return yesterday.toISOString().split("T")[0];
   };
 
-  // 어제의 미완료 할 일 조회
-  const fetchYesterdayTodos = async () => {
-    try {
-      setIsLoading(true);
-      const yesterdayDate = getYesterdayDate();
+  const yesterdayDate = getYesterdayDate();
+  const today = new Date().toISOString().split("T")[0];
+
+  // 어제의 미완료 할 일 조회 (TanStack Query)
+  const { data: yesterdayTodos = [] } = useQuery({
+    queryKey: ["yesterday-todos", yesterdayDate],
+    queryFn: async () => {
       const response = await fetch(`/api/todos?date=${yesterdayDate}`);
       if (!response.ok) throw new Error("Failed to fetch todos");
       const data = await response.json();
       // 미완료 항목만 필터링
-      const incompleteTodos = data.filter((todo: Todo) => !todo.isCompleted);
-      setYesterdayTodos(incompleteTodos);
-    } catch (err) {
-      console.error("어제 할 일을 불러오는데 실패했습니다:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return data.filter((todo: Todo) => !todo.isCompleted) as Todo[];
+    },
+    staleTime: 5 * 60 * 1000, // 5분
+  });
 
-  useEffect(() => {
-    fetchYesterdayTodos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // 오늘로 이동 Mutation
+  const moveToTodayMutation = useMutation({
+    mutationFn: async (selectedTodos: Todo[]) => {
+      const createPromises = selectedTodos.map((todo) =>
+        fetch("/api/todos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: todo.content,
+            date: today,
+          }),
+        })
+      );
+      await Promise.all(createPromises);
+    },
+    onSuccess: () => {
+      // 오늘의 할 일 목록 갱신
+      queryClient.invalidateQueries({ queryKey: ["todos", today] });
+      toast.success(`${selectedIds.size}개의 할 일이 오늘로 추가되었습니다!`);
+      setSelectedIds(new Set()); // 선택 초기화
+    },
+    onError: (err) => {
+      toast.error("오늘 할 일로 추가하는데 실패했습니다.");
+      console.error(err);
+    },
+  });
 
   // 전체 선택/해제
   const toggleSelectAll = () => {
@@ -69,38 +89,14 @@ export default function YesterdayTodos() {
   };
 
   // 오늘 할 일로 추가
-  const moveToToday = async () => {
+  const moveToToday = () => {
     if (selectedIds.size === 0) return;
 
-    try {
-      setIsMoving(true);
-      const today = new Date().toISOString().split("T")[0];
+    const selectedTodos = yesterdayTodos.filter((todo) =>
+      selectedIds.has(todo.id)
+    );
 
-      const selectedTodos = yesterdayTodos.filter((todo) =>
-        selectedIds.has(todo.id)
-      );
-
-      // 각 할 일을 오늘 날짜로 복사
-      const createPromises = selectedTodos.map((todo) =>
-        fetch("/api/todos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: todo.content,
-            date: today,
-          }),
-        })
-      );
-
-      await Promise.all(createPromises);
-
-      // 성공 후 목록 새로고침
-      window.location.reload();
-    } catch (err) {
-      console.error("오늘 할 일로 추가하는데 실패했습니다:", err);
-    } finally {
-      setIsMoving(false);
-    }
+    moveToTodayMutation.mutate(selectedTodos);
   };
 
   // 시간 파싱
@@ -115,7 +111,7 @@ export default function YesterdayTodos() {
     return { text: content, time: null };
   };
 
-  if (isLoading || yesterdayTodos.length === 0) {
+  if (yesterdayTodos.length === 0) {
     return null;
   }
 
@@ -219,7 +215,7 @@ export default function YesterdayTodos() {
 
             <button
               onClick={moveToToday}
-              disabled={selectedIds.size === 0 || isMoving}
+              disabled={selectedIds.size === 0 || moveToTodayMutation.isPending}
               className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-medium transition-all duration-300 ${
                 selectedIds.size === 0
                   ? "bg-white/20 text-gray-400 cursor-not-allowed"
@@ -227,7 +223,7 @@ export default function YesterdayTodos() {
               }`}
             >
               <ArrowRight className="w-4 h-4" />
-              {isMoving
+              {moveToTodayMutation.isPending
                 ? "추가 중..."
                 : `오늘 할 일로 추가하기 (${selectedIds.size})`}
             </button>

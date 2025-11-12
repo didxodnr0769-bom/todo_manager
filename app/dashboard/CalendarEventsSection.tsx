@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 interface CalendarEvent {
   id: string;
@@ -24,35 +26,53 @@ interface CalendarEventsSectionProps {
 export default function CalendarEventsSection({
   selectedDate,
 }: CalendarEventsSectionProps) {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(
     new Set()
   );
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  // 이벤트 조회
-  const fetchEvents = async () => {
-    try {
-      setIsLoading(true);
+  // 캘린더 이벤트 조회 (TanStack Query)
+  const {
+    data: events = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["calendar-events", selectedDate],
+    queryFn: async () => {
       const response = await fetch(`/api/calendar/events?date=${selectedDate}`);
       if (!response.ok) throw new Error("Failed to fetch events");
       const data = await response.json();
-      setEvents(data.events);
-      setError(null);
-    } catch (err) {
-      setError("이벤트를 불러오는데 실패했습니다.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return data.events as CalendarEvent[];
+    },
+    staleTime: 5 * 60 * 1000, // 5분
+  });
 
-  useEffect(() => {
-    fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
+  // To-Do 생성 Mutation
+  const createTodosMutation = useMutation({
+    mutationFn: async (selectedEvents: CalendarEvent[]) => {
+      const createPromises = selectedEvents.map((event) =>
+        fetch("/api/todos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: event.summary,
+            date: selectedDate,
+          }),
+        })
+      );
+      await Promise.all(createPromises);
+    },
+    onSuccess: () => {
+      // To-Do 목록 갱신
+      queryClient.invalidateQueries({ queryKey: ["todos", selectedDate] });
+      toast.success(`${selectedEventIds.size}개의 할 일이 생성되었습니다!`);
+      setSelectedEventIds(new Set()); // 선택 초기화
+    },
+    onError: (err) => {
+      toast.error("To-Do 생성에 실패했습니다.");
+      console.error(err);
+    },
+  });
 
   // 체크박스 토글
   const toggleEventSelection = (eventId: string) => {
@@ -68,36 +88,14 @@ export default function CalendarEventsSection({
   };
 
   // 선택된 일정으로 To-Do 생성
-  const createTodosFromSelectedEvents = async () => {
+  const createTodosFromSelectedEvents = () => {
     if (selectedEventIds.size === 0) return;
 
-    try {
-      setIsCreating(true);
-      setError(null);
+    const selectedEvents = events.filter((event) =>
+      selectedEventIds.has(event.id)
+    );
 
-      const selectedEvents = events.filter((event) =>
-        selectedEventIds.has(event.id)
-      );
-
-      const createPromises = selectedEvents.map((event) =>
-        fetch("/api/todos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: event.summary,
-            date: selectedDate,
-          }),
-        })
-      );
-
-      await Promise.all(createPromises);
-      window.location.reload();
-    } catch (err) {
-      setError("To-Do 생성에 실패했습니다.");
-      console.error(err);
-    } finally {
-      setIsCreating(false);
-    }
+    createTodosMutation.mutate(selectedEvents);
   };
 
   if (isLoading) {
@@ -108,29 +106,31 @@ export default function CalendarEventsSection({
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-3 glass-effect-strong border border-red-400/30 rounded-2xl text-red-700 text-sm glass-shadow">
+        이벤트를 불러오는데 실패했습니다.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="p-3 glass-effect-strong border border-red-400/30 rounded-2xl text-red-700 text-sm glass-shadow">
-          {error}
-        </div>
-      )}
-
       {/* To-Do 생성 버튼 */}
       <div className="flex justify-end">
         <button
           onClick={createTodosFromSelectedEvents}
-          disabled={isCreating || selectedEventIds.size === 0}
+          disabled={createTodosMutation.isPending || selectedEventIds.size === 0}
           className={`flex items-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300 text-sm font-medium glass-shadow ${
-            selectedEventIds.size === 0 && !isCreating
+            selectedEventIds.size === 0 && !createTodosMutation.isPending
               ? "bg-white/20 text-gray-400 cursor-not-allowed"
-              : isCreating
+              : createTodosMutation.isPending
               ? "bg-white/30 text-gray-500 cursor-not-allowed"
               : "glass-effect-strong text-gray-700 hover:glass-effect-light"
           }`}
         >
           <Plus className="w-4 h-4" />
-          {isCreating
+          {createTodosMutation.isPending
             ? "생성 중..."
             : selectedEventIds.size > 0
             ? `To-Do 생성하기 (${selectedEventIds.size})`
