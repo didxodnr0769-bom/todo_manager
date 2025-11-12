@@ -9,14 +9,14 @@ interface TabViewProps {
 
 export default function TabView({ activeTab, onTabChange }: TabViewProps) {
   return (
-    <div className="bg-gray-200 rounded-2xl p-1 flex">
+    <div className="glass-effect rounded-3xl p-1 flex glass-shadow">
       {/* 오늘의 할 일 탭 */}
       <button
         onClick={() => onTabChange("todos")}
-        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium transition-all duration-300 ${
           activeTab === "todos"
-            ? "bg-white text-gray-900 shadow-sm"
-            : "text-gray-700 hover:text-gray-900"
+            ? "glass-effect-strong text-gray-700 shadow-lg"
+            : "text-gray-600 hover:text-gray-700 hover:bg-white/10"
         }`}
       >
         <ListTodo className="w-4 h-4" />
@@ -26,10 +26,10 @@ export default function TabView({ activeTab, onTabChange }: TabViewProps) {
       {/* 캘린더 일정 탭 */}
       <button
         onClick={() => onTabChange("calendar")}
-        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium transition-all duration-300 ${
           activeTab === "calendar"
-            ? "bg-white text-gray-900 shadow-sm"
-            : "text-gray-700 hover:text-gray-900"
+            ? "glass-effect-strong text-gray-700 shadow-lg"
+            : "text-gray-600 hover:text-gray-700 hover:bg-white/10"
         }`}
       >
         <Calendar className="w-4 h-4" />

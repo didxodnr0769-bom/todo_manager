@@ -103,7 +103,7 @@ export default function CalendarEventsSection({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-300"></div>
       </div>
     );
   }
@@ -111,7 +111,7 @@ export default function CalendarEventsSection({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="p-3 glass-effect-strong border border-red-400/30 rounded-2xl text-red-700 text-sm glass-shadow">
           {error}
         </div>
       )}
@@ -121,12 +121,12 @@ export default function CalendarEventsSection({
         <button
           onClick={createTodosFromSelectedEvents}
           disabled={isCreating || selectedEventIds.size === 0}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300 text-sm font-medium glass-shadow ${
             selectedEventIds.size === 0 && !isCreating
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              ? "bg-white/20 text-gray-400 cursor-not-allowed"
               : isCreating
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
+              ? "bg-white/30 text-gray-500 cursor-not-allowed"
+              : "glass-effect-strong text-gray-700 hover:glass-effect-light"
           }`}
         >
           <Plus className="w-4 h-4" />
@@ -140,14 +140,14 @@ export default function CalendarEventsSection({
 
       {/* 캘린더 이벤트 목록 */}
       {events.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm p-16 text-center">
+        <div className="glass-effect-strong rounded-3xl glass-shadow p-16 text-center">
           <div className="flex flex-col items-center gap-6">
             {/* 파티 이모지 아이콘 */}
             <div className="text-6xl">🎉</div>
 
             {/* 메시지 */}
             <div className="space-y-2">
-              <p className="text-gray-900 font-medium text-base leading-relaxed">
+              <p className="text-gray-700 font-medium text-base leading-relaxed">
                 오늘 예정된 일정이 없습니다.
                 <br />
                 편안한 하루 보내세요!
@@ -156,22 +156,22 @@ export default function CalendarEventsSection({
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="glass-effect-strong rounded-3xl glass-shadow overflow-hidden">
           {events.map((event, index) => (
             <div
               key={event.id}
-              className={`px-6 py-4 hover:bg-gray-50 transition-colors ${
-                index !== events.length - 1 ? "border-b border-gray-200" : ""
+              className={`px-6 py-4 hover:bg-white/20 transition-all duration-200 ${
+                index !== events.length - 1 ? "border-b border-gray-200/30" : ""
               }`}
             >
               <div className="flex items-start gap-3">
                 {/* 체크박스 */}
                 <button
                   onClick={() => toggleEventSelection(event.id)}
-                  className={`mt-1 w-4 h-4 rounded border flex-shrink-0 ${
+                  className={`mt-1 w-4 h-4 rounded border flex-shrink-0 transition-all duration-200 ${
                     selectedEventIds.has(event.id)
-                      ? "bg-blue-500 border-blue-500"
-                      : "bg-gray-100 border-gray-400"
+                      ? "bg-pink-300 border-pink-300"
+                      : "bg-white/40 border-gray-400 hover:bg-white/60"
                   }`}
                 >
                   {selectedEventIds.has(event.id) && (
@@ -203,7 +203,7 @@ export default function CalendarEventsSection({
                 {/* 내용 */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-base font-medium text-gray-900">
+                    <span className="text-base font-medium text-gray-700">
                       {event.summary}
                     </span>
                     {event.calendarName && (

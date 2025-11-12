@@ -34,16 +34,16 @@ export default function DatePicker({ selectedDate, onDateChange }: DatePickerPro
         {/* 이전 버튼 */}
         <button
           onClick={() => changeDate(-1)}
-          className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl glass-effect hover:glass-effect-strong transition-all duration-300"
           aria-label="이전 날짜"
         >
           <ChevronLeft className="w-5 h-5 text-gray-700" />
         </button>
 
         {/* 날짜 표시 및 선택 */}
-        <button className="flex items-center gap-2 px-5 h-10 rounded-lg hover:bg-gray-100 transition-colors">
+        <button className="flex items-center gap-2 px-5 h-10 rounded-2xl glass-effect-strong glass-shadow transition-all duration-300 hover:glass-effect-light">
           <Calendar className="w-5 h-5 text-gray-700" />
-          <span className="text-base font-semibold text-gray-900">
+          <span className="text-base font-semibold text-gray-700">
             {formatDate(selectedDate)}
           </span>
         </button>
@@ -51,7 +51,7 @@ export default function DatePicker({ selectedDate, onDateChange }: DatePickerPro
         {/* 다음 버튼 */}
         <button
           onClick={() => changeDate(1)}
-          className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl glass-effect hover:glass-effect-strong transition-all duration-300"
           aria-label="다음 날짜"
         >
           <ChevronRight className="w-5 h-5 text-gray-700" />
@@ -61,7 +61,7 @@ export default function DatePicker({ selectedDate, onDateChange }: DatePickerPro
       {/* 오늘 버튼 - 다음 라인 */}
       <button
         onClick={goToToday}
-        className="px-3 h-8 border border-blue-500 text-blue-500 text-sm font-medium rounded-lg hover:bg-blue-50 transition-colors"
+        className="px-3 h-8 glass-effect border border-gray-400/40 text-gray-700 text-sm font-medium rounded-xl hover:glass-effect-strong transition-all duration-300"
       >
         오늘
       </button>

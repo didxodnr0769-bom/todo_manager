@@ -120,21 +120,21 @@ export default function YesterdayTodos() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+    <div className="glass-effect-strong rounded-3xl glass-shadow overflow-hidden">
       {/* 헤더 */}
       <div
-        className="border-b border-gray-200 px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="border-b border-gray-300/30 px-6 py-4 cursor-pointer hover:bg-white/20 transition-all duration-200"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xl">⏰</span>
-              <h3 className="text-base font-bold text-gray-900">
+              <h3 className="text-base font-bold text-gray-700">
                 어제 완료하지 못한 할 일
               </h3>
             </div>
-            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full">
+            <span className="px-2 py-0.5 bg-yellow-200 text-yellow-700 text-xs font-bold rounded-full">
               {yesterdayTodos.length}개
             </span>
           </div>
@@ -157,16 +157,16 @@ export default function YesterdayTodos() {
               return (
                 <div
                   key={todo.id}
-                  className="border-b border-gray-200 last:border-0 px-6 py-3 hover:bg-gray-50 transition-colors"
+                  className="border-b border-gray-200/30 last:border-0 px-6 py-3 hover:bg-white/20 transition-all duration-200"
                 >
                   <div className="flex items-start gap-3">
                     {/* 체크박스 */}
                     <button
                       onClick={() => toggleSelect(todo.id)}
-                      className={`mt-1 w-4 h-4 rounded border flex-shrink-0 ${
+                      className={`mt-1 w-4 h-4 rounded border flex-shrink-0 transition-all duration-200 ${
                         selectedIds.has(todo.id)
-                          ? "bg-blue-500 border-blue-500"
-                          : "bg-gray-100 border-gray-300"
+                          ? "bg-pink-300 border-pink-300"
+                          : "bg-white/40 border-gray-400 hover:bg-white/60"
                       }`}
                     >
                       {selectedIds.has(todo.id) && (
@@ -194,9 +194,9 @@ export default function YesterdayTodos() {
 
                     {/* 내용 */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-base text-gray-600">{text}</p>
+                      <p className="text-base text-gray-700">{text}</p>
                       {time && (
-                        <p className="text-sm text-gray-400 mt-1">{time}</p>
+                        <p className="text-sm text-gray-500 mt-1">{time}</p>
                       )}
                     </div>
                   </div>
@@ -206,11 +206,11 @@ export default function YesterdayTodos() {
           </div>
 
           {/* 푸터 */}
-          <div className="bg-gray-50 px-6 py-4 space-y-3">
+          <div className="bg-white/10 px-6 py-4 space-y-3">
             <div className="flex items-center justify-between text-sm">
               <button
                 onClick={toggleSelectAll}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-gray-600 hover:text-gray-700 transition-colors"
               >
                 전체 선택
               </button>
@@ -220,10 +220,10 @@ export default function YesterdayTodos() {
             <button
               onClick={moveToToday}
               disabled={selectedIds.size === 0 || isMoving}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-medium transition-all duration-300 ${
                 selectedIds.size === 0
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
+                  ? "bg-white/20 text-gray-400 cursor-not-allowed"
+                  : "glass-effect-strong text-gray-700 hover:glass-effect-light glass-shadow"
               }`}
             >
               <ArrowRight className="w-4 h-4" />

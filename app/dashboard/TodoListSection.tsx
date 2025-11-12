@@ -126,7 +126,7 @@ export default function TodoListSection({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-300"></div>
       </div>
     );
   }
@@ -134,7 +134,7 @@ export default function TodoListSection({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="p-3 glass-effect-strong border border-red-400/30 rounded-2xl text-red-700 text-sm glass-shadow">
           {error}
         </div>
       )}
@@ -143,7 +143,7 @@ export default function TodoListSection({
       <div className="flex justify-end">
         <button
           onClick={() => setIsDialogOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 glass-effect-strong text-gray-700 rounded-2xl hover:glass-effect-light transition-all duration-300 text-sm font-medium glass-shadow"
         >
           <Plus className="w-4 h-4" />
           일정 추가
@@ -151,12 +151,12 @@ export default function TodoListSection({
       </div>
 
       {/* To-Do 리스트 카드 */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="glass-effect-strong rounded-3xl glass-shadow overflow-hidden">
         {/* 헤더 */}
-        <div className="border-b border-gray-200 px-6 py-4">
+        <div className="border-b border-gray-300/30 px-6 py-4">
           <div className="flex items-center gap-2 mb-3">
             <CheckSquare className="w-5 h-5 text-gray-700" />
-            <h3 className="text-base font-bold text-gray-900">To Do</h3>
+            <h3 className="text-base font-bold text-gray-700">To Do</h3>
           </div>
           <p className="text-sm text-gray-600">
             완료 : {completedCount}/{todos.length}
@@ -175,7 +175,7 @@ export default function TodoListSection({
               return (
                 <div
                   key={todo.id}
-                  className="border-b border-gray-200 last:border-0 px-6 py-4 hover:bg-gray-50 transition-colors group"
+                  className="border-b border-gray-200/30 last:border-0 px-6 py-4 hover:bg-white/20 transition-all duration-200 group"
                 >
                   <div className="flex items-start gap-3">
                     {/* 체크박스 */}
@@ -183,10 +183,10 @@ export default function TodoListSection({
                       onClick={() =>
                         handleToggleTodo(todo.id, todo.isCompleted)
                       }
-                      className={`mt-1 w-4 h-4 rounded border flex-shrink-0 ${
+                      className={`mt-1 w-4 h-4 rounded border flex-shrink-0 transition-all duration-200 ${
                         todo.isCompleted
-                          ? "bg-blue-500 border-blue-500"
-                          : "bg-gray-100 border-gray-400"
+                          ? "bg-pink-300 border-pink-300"
+                          : "bg-white/40 border-gray-400 hover:bg-white/60"
                       }`}
                     >
                       {todo.isCompleted && (
@@ -212,7 +212,7 @@ export default function TodoListSection({
                         className={`text-base ${
                           todo.isCompleted
                             ? "text-gray-400 line-through"
-                            : "text-gray-900"
+                            : "text-gray-700"
                         }`}
                       >
                         {text}
@@ -225,7 +225,7 @@ export default function TodoListSection({
                     {/* 삭제 버튼 */}
                     <button
                       onClick={() => handleDeleteTodo(todo.id)}
-                      className="opacity-0 group-hover:opacity-100 w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all flex-shrink-0"
+                      className="opacity-0 group-hover:opacity-100 w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/20 transition-all duration-200 flex-shrink-0"
                       aria-label="삭제"
                     >
                       <Trash2 className="w-4 h-4 text-gray-600" />
