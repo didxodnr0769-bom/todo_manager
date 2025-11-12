@@ -1,11 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 /**
- * To-Do 목록 조회 (날짜 필터링 지원)
+ * To-Do 목록 조회 (날짜 필터링 지원) - 캐싱 적용
  */
 export async function getTodos(dateParam?: string) {
   try {
@@ -22,19 +22,30 @@ export async function getTodos(dateParam?: string) {
     const nextDay = new Date(targetDate);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    const todos = await prisma.todo.findMany({
-      where: {
-        userId: session.user.id,
-        date: {
-          gte: targetDate,
-          lt: nextDay,
-        },
+    // 캐싱된 함수 생성 - 사용자별, 날짜별로 캐시 키 생성
+    const getCachedTodos = unstable_cache(
+      async () => {
+        return await prisma.todo.findMany({
+          where: {
+            userId: session.user.id,
+            date: {
+              gte: targetDate,
+              lt: nextDay,
+            },
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        });
       },
-      orderBy: {
-        createdAt: "asc",
-      },
-    });
+      [`todos-${session.user.id}-${dateParam || "today"}`],
+      {
+        tags: [`todos-${session.user.id}`, `todos-${session.user.id}-${dateParam || "today"}`],
+        revalidate: 60, // 60초 후 재검증
+      }
+    );
 
+    const todos = await getCachedTodos();
     return todos;
   } catch (error) {
     console.error("Error fetching todos:", error);
@@ -68,7 +79,15 @@ export async function addTodo(content: string, date?: string) {
       },
     });
 
+    // 캐시 무효화: 해당 사용자의 모든 todo 캐시와 특정 날짜 캐시 무효화
+    revalidateTag(`todos-${session.user.id}`);
+    if (date) {
+      revalidateTag(`todos-${session.user.id}-${date}`);
+    } else {
+      revalidateTag(`todos-${session.user.id}-today`);
+    }
     revalidatePath("/dashboard");
+
     return todo;
   } catch (error) {
     console.error("Error creating todo:", error);
@@ -109,6 +128,8 @@ export async function toggleTodo(id: string, isCompleted: boolean) {
       data: { isCompleted },
     });
 
+    // 캐시 무효화
+    revalidateTag(`todos-${session.user.id}`);
     revalidatePath("/dashboard");
     return updatedTodo;
   } catch (error) {
@@ -145,6 +166,8 @@ export async function deleteTodo(id: string) {
       where: { id },
     });
 
+    // 캐시 무효화
+    revalidateTag(`todos-${session.user.id}`);
     revalidatePath("/dashboard");
     return { message: "Todo deleted successfully" };
   } catch (error) {
