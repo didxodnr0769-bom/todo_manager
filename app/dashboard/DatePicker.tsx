@@ -18,6 +18,11 @@ export default function DatePicker({ selectedDate, onDateChange }: DatePickerPro
     onDateChange(new Date().toISOString().split("T")[0])
   }
 
+  const isToday = () => {
+    const today = new Date().toISOString().split("T")[0]
+    return selectedDate === today
+  }
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
     const month = date.getMonth() + 1
@@ -41,11 +46,22 @@ export default function DatePicker({ selectedDate, onDateChange }: DatePickerPro
         </button>
 
         {/* 날짜 표시 및 선택 */}
-        <button className="flex items-center gap-2 px-5 h-10 rounded-2xl glass-effect-strong glass-shadow transition-all duration-300 hover:glass-effect-light">
-          <Calendar className="w-5 h-5 text-gray-700" />
-          <span className="text-base font-semibold text-gray-700">
+        <button
+          className={`relative flex items-center gap-2 px-5 h-10 rounded-2xl glass-shadow transition-all duration-300 ${
+            isToday()
+              ? "glass-effect-light border-2 border-blue-400/60"
+              : "glass-effect-strong hover:glass-effect-light"
+          }`}
+        >
+          <Calendar className={`w-5 h-5 ${isToday() ? "text-blue-600" : "text-gray-700"}`} />
+          <span className={`text-base font-semibold ${isToday() ? "text-blue-700" : "text-gray-700"}`}>
             {formatDate(selectedDate)}
           </span>
+          {isToday() && (
+            <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-bold rounded-full shadow-md animate-pulse">
+              오늘
+            </span>
+          )}
         </button>
 
         {/* 다음 버튼 */}
@@ -58,13 +74,15 @@ export default function DatePicker({ selectedDate, onDateChange }: DatePickerPro
         </button>
       </div>
 
-      {/* 오늘 버튼 - 다음 라인 */}
-      <button
-        onClick={goToToday}
-        className="px-3 h-8 glass-effect border border-gray-400/40 text-gray-700 text-sm font-medium rounded-xl hover:glass-effect-strong transition-all duration-300"
-      >
-        오늘
-      </button>
+      {/* 오늘 버튼 - 오늘 날짜가 아닐 때만 표시 */}
+      {!isToday() && (
+        <button
+          onClick={goToToday}
+          className="px-3 h-8 glass-effect border border-blue-400/40 text-blue-600 text-sm font-medium rounded-xl hover:glass-effect-strong hover:border-blue-500/60 transition-all duration-300"
+        >
+          오늘로 이동
+        </button>
+      )}
     </div>
   )
 }
