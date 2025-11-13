@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { google } from "googleapis"
+import { getTodayKST } from "@/lib/dateUtils"
 
 // GET /api/cron/create-todos - 매일 00:00시에 실행되는 Cron Job
 // 모든 사용자의 당일 구글 캘린더 일정을 가져와 To-Do 생성
@@ -40,31 +41,43 @@ export async function GET() {
 
         const calendar = google.calendar({ version: "v3", auth: oauth2Client })
 
-        // 오늘 날짜의 시작과 끝
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        const tomorrow = new Date(today)
-        tomorrow.setDate(tomorrow.getDate() + 1)
+        // 한국 시간(KST) 기준 오늘 날짜 계산
+        const todayKST = getTodayKST() // YYYY-MM-DD 형식
+        const targetDate = new Date(todayKST + "T00:00:00Z")
+        const nextDay = new Date(targetDate)
+        nextDay.setDate(nextDay.getDate() + 1)
 
         // 오늘의 캘린더 이벤트 조회
         const response = await calendar.events.list({
           calendarId: "primary",
-          timeMin: today.toISOString(),
-          timeMax: tomorrow.toISOString(),
+          timeMin: targetDate.toISOString(),
+          timeMax: nextDay.toISOString(),
           singleEvents: true,
           orderBy: "startTime",
         })
 
         const events = response.data.items || []
 
-        // 각 이벤트를 To-Do로 생성
+        // 하루종일 이벤트 필터링 및 To-Do 생성
         const createdTodos = []
         for (const event of events) {
+          const isAllDay = !event.start?.dateTime && !!event.start?.date
+
+          // 하루종일 이벤트의 경우, 날짜 범위 확인
+          if (isAllDay && event.end?.date) {
+            const endDateOnly = event.end.date.split('T')[0] // YYYY-MM-DD만 추출
+            // end 날짜가 targetDate보다 커야 해당 날짜에 포함
+            // 예: 11월 12일 하루종일 이벤트는 start: 2025-11-12, end: 2025-11-13
+            if (endDateOnly <= todayKST) {
+              continue // 오늘 날짜가 아니므로 스킵
+            }
+          }
+
           const todo = await prisma.todo.create({
             data: {
               content: event.summary || "Untitled Event",
               userId: user.id,
-              date: today,
+              date: targetDate,
               isCompleted: false,
             },
           })
