@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { google } from "googleapis"
 import { Session } from "next-auth"
+import { getTodayKST, getKSTDateString } from "@/lib/dateUtils"
 
 interface ExtendedSession extends Session {
   accessToken?: string
@@ -33,14 +34,11 @@ export async function GET(request: Request) {
     // Calendar API 클라이언트 생성
     const calendar = google.calendar({ version: "v3", auth: oauth2Client })
 
-    // 날짜 설정: 쿼리 파라미터가 있으면 해당 날짜, 없으면 오늘
-    const targetDate = dateParam ? new Date(dateParam) : new Date()
-    targetDate.setHours(0, 0, 0, 0)
+    // 한국 시간(KST) 기준 날짜 설정
+    const targetDateString = dateParam || getTodayKST() // YYYY-MM-DD 형식
+    const targetDate = new Date(targetDateString + "T00:00:00Z")
     const nextDay = new Date(targetDate)
     nextDay.setDate(nextDay.getDate() + 1)
-
-    // 날짜 비교를 위한 targetDateString (YYYY-MM-DD 형식)
-    const targetDateString = targetDate.toISOString().split('T')[0]
 
     // 모든 캘린더 목록 가져오기
     const calendarListResponse = await calendar.calendarList.list()
@@ -80,12 +78,11 @@ export async function GET(request: Request) {
             }
           })
           .filter((event) => {
-            // 하루종일 이벤트의 경우, end 날짜가 targetDate보다 크거나 같아야 함
-            // 예: 11월 12일 하루종일 이벤트는 start: 2025-11-11, end: 2025-11-12
-            // targetDate가 2025-11-12일 때는 표시되어야 하므로 end >= targetDate
-            if (event.isAllDay && event.end) {
-              const endDateOnly = event.end.split('T')[0] // YYYY-MM-DD만 추출
-              return endDateOnly > targetDateString // end가 targetDate보다 커야 해당 날짜 포함
+            // 하루종일 이벤트의 경우, start 날짜가 targetDate와 일치해야 함
+            // 예: 11월 13일 하루종일 이벤트는 start: 2025-11-13, end: 2025-11-14
+            if (event.isAllDay && event.start) {
+              const startDateOnly = event.start.split('T')[0] // YYYY-MM-DD만 추출
+              return startDateOnly === targetDateString // start 날짜가 targetDate와 정확히 일치해야 함
             }
             return true // 일반 이벤트는 모두 포함
           })
