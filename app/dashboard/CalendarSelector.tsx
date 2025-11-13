@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { getTodayKST, addDaysToDateString } from "@/lib/dateUtils"
 
 interface CalendarEvent {
   id: string
@@ -22,9 +23,7 @@ export default function CalendarSelector() {
   const [isCreatingTodos, setIsCreatingTodos] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  )
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayKST())
 
   // 모든 캘린더의 이벤트 조회
   const fetchEvents = async () => {
@@ -108,9 +107,7 @@ export default function CalendarSelector() {
 
   // 날짜 변경 핸들러
   const changeDate = (days: number) => {
-    const currentDate = new Date(selectedDate)
-    currentDate.setDate(currentDate.getDate() + days)
-    setSelectedDate(currentDate.toISOString().split("T")[0])
+    setSelectedDate(addDaysToDateString(selectedDate, days))
   }
 
   return (
@@ -152,9 +149,7 @@ export default function CalendarSelector() {
             →
           </button>
           <button
-            onClick={() =>
-              setSelectedDate(new Date().toISOString().split("T")[0])
-            }
+            onClick={() => setSelectedDate(getTodayKST())}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
           >
             오늘

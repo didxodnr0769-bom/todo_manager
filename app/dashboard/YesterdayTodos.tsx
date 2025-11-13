@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronUp, ChevronDown, ArrowRight } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { getTodayKST, addDaysToDateString } from "@/lib/dateUtils";
 
 interface Todo {
   id: string;
@@ -18,15 +19,9 @@ export default function YesterdayTodos() {
   const [isExpanded, setIsExpanded] = useState(true);
   const queryClient = useQueryClient();
 
-  // 어제 날짜 계산
-  const getYesterdayDate = () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split("T")[0];
-  };
-
-  const yesterdayDate = getYesterdayDate();
-  const today = new Date().toISOString().split("T")[0];
+  // 한국 시간 기준 어제 날짜와 오늘 날짜
+  const today = getTodayKST();
+  const yesterdayDate = addDaysToDateString(today, -1);
 
   // 어제의 미완료 할 일 조회 (TanStack Query)
   const { data: yesterdayTodos = [] } = useQuery({

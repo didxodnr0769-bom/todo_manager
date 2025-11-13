@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
+import { getTodayKST, isKSTToday, addDaysToDateString } from "@/lib/dateUtils"
 
 interface DatePickerProps {
   selectedDate: string
@@ -9,18 +10,15 @@ interface DatePickerProps {
 
 export default function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
   const changeDate = (days: number) => {
-    const currentDate = new Date(selectedDate)
-    currentDate.setDate(currentDate.getDate() + days)
-    onDateChange(currentDate.toISOString().split("T")[0])
+    onDateChange(addDaysToDateString(selectedDate, days))
   }
 
   const goToToday = () => {
-    onDateChange(new Date().toISOString().split("T")[0])
+    onDateChange(getTodayKST())
   }
 
   const isToday = () => {
-    const today = new Date().toISOString().split("T")[0]
-    return selectedDate === today
+    return isKSTToday(selectedDate)
   }
 
   const formatDate = (dateStr: string) => {

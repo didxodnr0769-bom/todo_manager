@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import AddTodoDialog from "./AddTodoDialog";
+import { getTodayKST, addDaysToDateString } from "@/lib/dateUtils";
 
 interface Todo {
   id: string;
@@ -17,9 +18,7 @@ export default function TodoList() {
   const [newTodo, setNewTodo] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayKST());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // To-Do 목록 조회
@@ -142,9 +141,7 @@ export default function TodoList() {
 
   // 이전/다음 날짜로 이동
   const changeDate = (days: number) => {
-    const currentDate = new Date(selectedDate);
-    currentDate.setDate(currentDate.getDate() + days);
-    setSelectedDate(currentDate.toISOString().split("T")[0]);
+    setSelectedDate(addDaysToDateString(selectedDate, days));
   };
 
   if (isLoading) {
@@ -186,9 +183,7 @@ export default function TodoList() {
           →
         </button>
         <button
-          onClick={() =>
-            setSelectedDate(new Date().toISOString().split("T")[0])
-          }
+          onClick={() => setSelectedDate(getTodayKST())}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
         >
           오늘

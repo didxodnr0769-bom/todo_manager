@@ -8,6 +8,7 @@ import TabView from "./TabView";
 import TodoListSection from "./TodoListSection";
 import CalendarEventsSection from "./CalendarEventsSection";
 import YesterdayTodos from "./YesterdayTodos";
+import { getTodayKST, isKSTToday, addDaysToDateString } from "@/lib/dateUtils";
 
 interface DashboardClientProps {
   userName?: string | null;
@@ -18,22 +19,17 @@ export default function DashboardClient({
   userName,
   userEmail,
 }: DashboardClientProps) {
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayKST());
   const [activeTab, setActiveTab] = useState<"todos" | "calendar">("todos");
 
   // 오늘 날짜인지 확인하는 함수
   const isToday = () => {
-    const today = new Date().toISOString().split("T")[0];
-    return selectedDate === today;
+    return isKSTToday(selectedDate);
   };
 
   // 날짜 변경 함수
   const changeDate = (days: number) => {
-    const currentDate = new Date(selectedDate);
-    currentDate.setDate(currentDate.getDate() + days);
-    setSelectedDate(currentDate.toISOString().split("T")[0]);
+    setSelectedDate(addDaysToDateString(selectedDate, days));
   };
 
   // 탭 전환 함수
@@ -68,9 +64,18 @@ export default function DashboardClient({
   return (
     <div className="min-h-screen bg-blue-50 relative">
       {/* 배경 장식 요소들 */}
-      <div className="fixed top-0 left-0 w-96 h-96 bg-pink-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '0s' }}></div>
-      <div className="fixed bottom-0 right-0 w-96 h-96 bg-purple-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '2s' }}></div>
-      <div className="fixed top-1/2 left-1/2 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '4s' }}></div>
+      <div
+        className="fixed top-0 left-0 w-96 h-96 bg-pink-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10"
+        style={{ animationDelay: "0s" }}
+      ></div>
+      <div
+        className="fixed bottom-0 right-0 w-96 h-96 bg-purple-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10"
+        style={{ animationDelay: "2s" }}
+      ></div>
+      <div
+        className="fixed top-1/2 left-1/2 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl animate-float pointer-events-none -z-10"
+        style={{ animationDelay: "4s" }}
+      ></div>
 
       {/* 헤더 */}
       <Header userName={userName} userEmail={userEmail} />
